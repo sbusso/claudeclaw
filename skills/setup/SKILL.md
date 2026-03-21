@@ -11,7 +11,25 @@ Run setup steps automatically. Only pause when user action is required (channel 
 
 **UX Note:** Use `AskUserQuestion` for all user-facing questions.
 
-## 0. Git & Fork Setup
+## Mode Detection
+
+Before any steps, detect the execution mode:
+
+Run:
+- `echo $CLAUDE_PLUGIN_DATA`
+
+**If CLAUDE_PLUGIN_DATA is set → Plugin mode:**
+- Skip step 0 (Git & Fork) entirely
+- Print: "Running as MotherClaw plugin. State stored in $CLAUDE_PLUGIN_DATA"
+- Ensure state directories exist: `mkdir -p $CLAUDE_PLUGIN_DATA/{store,groups,logs}`
+- All subsequent steps use CLAUDE_PLUGIN_DATA for state paths
+
+**If CLAUDE_PLUGIN_DATA is not set → Developer mode:**
+- Proceed with all steps unchanged
+
+## 0. Git & Fork Setup (Developer mode only)
+
+**Plugin mode:** Skip this step entirely — there is no git repo to manage.
 
 Check the git remote configuration to ensure the user has a fork and upstream is configured.
 
@@ -52,7 +70,13 @@ Already configured. Continue.
 
 ## 1. Bootstrap (Node.js + Dependencies)
 
-Run `bash setup.sh` and parse the status block.
+**Plugin mode:** Dependencies are pre-installed in the plugin directory. Verify only:
+- `node --version` (must be 20+)
+- `ls dist/service.js` (must exist — if not, run `npm run build` in the plugin dir)
+- If agent runner needs compilation: `cd agent/runner && npx tsc`
+- Skip `bash setup.sh` entirely.
+
+**Developer mode:** Run `bash setup.sh` and parse the status block.
 
 - If NODE_OK=false → Node.js is missing or too old. Use `AskUserQuestion: Would you like me to install Node.js 22?` If confirmed:
   - macOS: `brew install node@22` (if brew available) or install nvm then `nvm install 22`
@@ -175,6 +199,8 @@ AskUserQuestion: Agent access to external directories?
 **Yes:** Collect paths/permissions. `npx tsx setup/index.ts --step mounts -- --json '{"allowedRoots":[...],"blockedPatterns":[],"nonMainReadOnly":true}'`
 
 ## 7. Start Service
+
+**Plugin mode note:** The setup script auto-detects `CLAUDE_PLUGIN_DATA` from the environment and passes it to the generated plist/systemd unit. Log paths are redirected to `$CLAUDE_PLUGIN_DATA/logs/`. No manual env var configuration needed.
 
 If service already running: unload first.
 - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist`
