@@ -9,7 +9,8 @@ import { logger } from './logger.js';
  * so they don't leak to child processes.
  */
 export function readEnvFile(keys: string[]): Record<string, string> {
-  const envFile = path.join(process.cwd(), '.env');
+  const envFile = process.env.MOTHERCLAW_ENV_FILE
+    || path.join(process.env.CLAUDE_PLUGIN_DATA || process.cwd(), '.env');
   let content: string;
   try {
     content = fs.readFileSync(envFile, 'utf-8');
