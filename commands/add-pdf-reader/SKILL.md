@@ -9,7 +9,7 @@ Adds PDF reading capability to all container agents using poppler-utils (pdftote
 
 ## Phase 1: Pre-flight
 
-1. Check if `container/skills/pdf-reader/pdf-reader` exists — skip to Phase 3 if already applied
+1. Check if `agent/skills/pdf-reader/pdf-reader` exists — skip to Phase 3 if already applied
 2. Confirm WhatsApp is installed first (`skill/whatsapp` merged). This skill modifies WhatsApp channel files.
 
 ## Phase 2: Apply Code Changes
@@ -38,9 +38,9 @@ git merge whatsapp/skill/pdf-reader || {
 ```
 
 This merges in:
-- `container/skills/pdf-reader/SKILL.md` (agent-facing documentation)
-- `container/skills/pdf-reader/pdf-reader` (CLI script)
-- `poppler-utils` in `container/Dockerfile`
+- `agent/skills/pdf-reader/SKILL.md` (agent-facing documentation)
+- `agent/skills/pdf-reader/pdf-reader` (CLI script)
+- `poppler-utils` in `docker/Dockerfile`
 - PDF attachment download in `src/channels/whatsapp.ts`
 - PDF tests in `src/channels/whatsapp.test.ts`
 
@@ -56,7 +56,7 @@ npx vitest run src/channels/whatsapp.test.ts
 ### Rebuild container
 
 ```bash
-./container/build.sh
+./docker/build.sh
 ```
 
 ### Restart service
@@ -93,7 +93,7 @@ Look for:
 
 ### Agent says pdf-reader command not found
 
-Container needs rebuilding. Run `./container/build.sh` and restart the service.
+Container needs rebuilding. Run `./docker/build.sh` and restart the service.
 
 ### PDF text extraction is empty
 

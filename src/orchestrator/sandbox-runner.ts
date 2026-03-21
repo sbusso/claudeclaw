@@ -9,7 +9,7 @@
  * - Near-zero overhead (<10ms cold start vs seconds for containers)
  * - Real credentials passed directly + network restricted to allowedDomains
  * - Orphan cleanup via PID files in data/sandbox-pids/
- * - Agent runner pre-compiled on host at container/agent-runner/dist/index.js
+ * - Agent runner pre-compiled on host at agent/runner/dist/index.js
  */
 import { ChildProcess, execFileSync, spawn } from 'child_process';
 import fs from 'fs';
@@ -232,8 +232,8 @@ function buildSandboxMounts(
     );
   }
 
-  // Sync skills from container/skills/ into each group's .claude/skills/
-  const skillsSrc = path.join(process.cwd(), 'container', 'skills');
+  // Sync skills from agent/skills/ into each group's .claude/skills/
+  const skillsSrc = path.join(process.cwd(), 'agent', 'skills');
   const skillsDst = path.join(groupSessionsDir, 'skills');
   if (fs.existsSync(skillsSrc)) {
     for (const skillDir of fs.readdirSync(skillsSrc)) {
@@ -316,11 +316,11 @@ export function buildSandboxSettings(mounts: SandboxMount[]): SandboxSettings {
 
 export function buildSandboxArgs(settingsPath: string): string[] {
   // Sandbox runs the pre-compiled agent-runner directly on the host.
-  // Build with: cd container/agent-runner && npx tsc
+  // Build with: cd agent/runner && npx tsc
   const agentRunnerPath = path.join(
     process.cwd(),
-    'container',
-    'agent-runner',
+    'agent',
+    'runner',
     'dist',
     'index.js',
   );

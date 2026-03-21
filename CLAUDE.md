@@ -48,7 +48,7 @@ Per-group override: set `"runtime": "sandbox"` in the registered group config.
 
 **Path mapping:** Container mode maps `/workspace/*` via volume mounts. Sandbox runs on the host, so the agent runner uses `MOTHERCLAW_*_DIR` env vars (`MOTHERCLAW_GROUP_DIR`, `MOTHERCLAW_IPC_DIR`, `MOTHERCLAW_PROJECT_DIR`, `MOTHERCLAW_GLOBAL_DIR`, `MOTHERCLAW_EXTRA_DIR`) to resolve actual host paths.
 
-**Agent runner compilation:** Sandbox can't use `tsx` (blocked Unix sockets). Pre-compile with `cd container/agent-runner && npx tsc`. The compiled output at `container/agent-runner/dist/index.js` is used by sandbox; container mode uses its own copy baked into the image.
+**Agent runner compilation:** Sandbox can't use `tsx` (blocked Unix sockets). Pre-compile with `cd agent/runner && npx tsc`. The compiled output at `agent/runner/dist/index.js` is used by sandbox; container mode uses its own copy baked into the image.
 
 **srt settings schema:** The `--settings <path>` JSON file requires ALL fields including `allowRead: []` even if empty. Omitting causes silent schema validation failure. Key fields: `network.allowedDomains`, `network.deniedDomains`, `network.allowLocalBinding`, `filesystem.denyRead`, `filesystem.allowRead`, `filesystem.allowWrite`, `filesystem.denyWrite`.
 

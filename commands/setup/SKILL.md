@@ -84,7 +84,7 @@ Use `AskUserQuestion` with options:
 If **Sandbox** chosen:
 - Run `npm install @anthropic-ai/sandbox-runtime` if not already installed
 - Set `RUNTIME=sandbox` in `.env`
-- Pre-compile agent runner: `cd container/agent-runner && npx tsc`
+- Pre-compile agent runner: `cd agent/runner && npx tsc`
 - Skip container build (3b, 3c) — go directly to step 4
 
 If **Apple Container** or **Docker** chosen, continue with the container setup below:

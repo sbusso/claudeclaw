@@ -12,7 +12,7 @@ This guide covers debugging the agent execution system (container and sandbox ru
 ```
 Host (macOS)                          Container (Linux VM)
 ─────────────────────────────────────────────────────────────
-src/orchestrator/container-runner.ts               container/agent-runner/
+src/orchestrator/container-runner.ts               agent/runner/
     │                                      │
     │ spawns container                      │ runs Claude Agent SDK
     │ with volume mounts                   │ with MCP servers
@@ -234,11 +234,11 @@ query({
 npm run build
 
 # Rebuild container (use --no-cache for clean rebuild)
-./container/build.sh
+./docker/build.sh
 
 # Or force full rebuild
 docker builder prune -af
-./container/build.sh
+./docker/build.sh
 ```
 
 ## Checking Container Image
@@ -340,7 +340,7 @@ src/orchestrator/sandbox-runner.ts
 
 **EPERM on all operations:** The srt settings JSON file requires ALL fields including empty arrays (`allowRead: []`). Omit any field and the entire settings file silently fails validation — zero error messages.
 
-**Agent runner won't start (tsx/EPERM):** Sandbox blocks Unix sockets needed by `tsx`. Fix: pre-compile with `cd container/agent-runner && npx tsc`, run with plain `node`.
+**Agent runner won't start (tsx/EPERM):** Sandbox blocks Unix sockets needed by `tsx`. Fix: pre-compile with `cd agent/runner && npx tsc`, run with plain `node`.
 
 **Agent can't find paths:** Check that `MOTHERCLAW_*_DIR` env vars are set in `sandbox-runner.ts`. The agent runner falls back to `/workspace/*` if env vars are missing.
 
@@ -367,7 +367,7 @@ echo -e "\n3. Container runtime running?"
 docker info &>/dev/null && echo "OK" || echo "NOT RUNNING - start Docker Desktop (macOS) or sudo systemctl start docker (Linux)"
 
 echo -e "\n4. Container image exists?"
-echo '{}' | docker run -i --entrypoint /bin/echo motherclaw-agent:latest "OK" 2>/dev/null || echo "MISSING - run ./container/build.sh"
+echo '{}' | docker run -i --entrypoint /bin/echo motherclaw-agent:latest "OK" 2>/dev/null || echo "MISSING - run ./docker/build.sh"
 
 echo -e "\n5. Session mount path correct?"
 grep -q "/home/node/.claude" src/orchestrator/container-runner.ts 2>/dev/null && echo "OK" || echo "WRONG - should mount to /home/node/.claude/, not /root/.claude/"

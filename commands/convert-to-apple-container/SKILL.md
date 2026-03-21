@@ -72,8 +72,8 @@ This merges in:
 - `src/orchestrator/container-runtime.ts` — Apple Container implementation (replaces Docker)
 - `src/container-runtime.test.ts` — Apple Container-specific tests
 - `src/orchestrator/container-runner.ts` — .env shadow mount fix and privilege dropping
-- `container/Dockerfile` — entrypoint that shadows .env via `mount --bind`
-- `container/build.sh` — default runtime set to `container`
+- `docker/Dockerfile` — entrypoint that shadows .env via `mount --bind`
+- `docker/build.sh` — default runtime set to `container`
 
 If the merge reports conflicts, resolve them by reading the conflicted files and understanding the intent of both sides.
 
@@ -97,7 +97,7 @@ container system status || container system start
 ### Build the container image
 
 ```bash
-./container/build.sh
+./docker/build.sh
 ```
 
 ### Test basic execution
@@ -158,7 +158,7 @@ container system status
 ```bash
 # Clean rebuild — Apple Container caches aggressively
 container builder stop && container builder rm && container builder start
-./container/build.sh
+./docker/build.sh
 ```
 
 **Container can't write to mounted directories:**
@@ -171,5 +171,5 @@ Check directory permissions on the host. The container runs as uid 1000.
 | `src/orchestrator/container-runtime.ts` | Full replacement — Docker → Apple Container API |
 | `src/container-runtime.test.ts` | Full replacement — tests for Apple Container behavior |
 | `src/orchestrator/container-runner.ts` | .env shadow mount removed, main containers start as root with privilege drop |
-| `container/Dockerfile` | Entrypoint: `mount --bind` for .env shadowing, `setpriv` privilege drop |
-| `container/build.sh` | Default runtime: `docker` → `container` |
+| `docker/Dockerfile` | Entrypoint: `mount --bind` for .env shadowing, `setpriv` privilege drop |
+| `docker/build.sh` | Default runtime: `docker` → `container` |

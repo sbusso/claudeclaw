@@ -44,7 +44,7 @@ npx dotenv -e .env -- npx tsx .claude/skills/x-integration/scripts/setup.ts
 # Verify: data/x-auth.json should exist after successful login
 
 # 2. Rebuild container to include skill
-./container/build.sh
+./docker/build.sh
 # Verify: Output shows "COPY .claude/skills/x-integration/agent.ts"
 
 # 3. Rebuild host and restart service
@@ -181,7 +181,7 @@ if (!handled) {
 
 ---
 
-**2. Container side: `container/agent-runner/src/ipc-mcp.ts`**
+**2. Container side: `agent/runner/src/ipc-mcp.ts`**
 
 Add import after `cron-parser` import:
 ```typescript
@@ -196,21 +196,21 @@ Add to the end of tools array (before the closing `]`):
 
 ---
 
-**3. Build script: `container/build.sh`**
+**3. Build script: `docker/build.sh`**
 
-Change build context from `container/` to project root (required to access `.claude/skills/`):
+Change build context from `docker/` to project root (required to access `.claude/skills/`):
 ```bash
 # Find:
 docker build -t "${IMAGE_NAME}:${TAG}" .
 
 # Replace with:
 cd "$SCRIPT_DIR/.."
-docker build -t "${IMAGE_NAME}:${TAG}" -f container/Dockerfile .
+docker build -t "${IMAGE_NAME}:${TAG}" -f docker/Dockerfile .
 ```
 
 ---
 
-**4. Dockerfile: `container/Dockerfile`**
+**4. Dockerfile: `docker/Dockerfile`**
 
 First, update the build context paths (required to access `.claude/skills/` from project root):
 ```dockerfile
@@ -220,12 +220,12 @@ COPY agent-runner/package*.json ./
 COPY agent-runner/ ./
 
 # Replace with:
-COPY container/agent-runner/package*.json ./
+COPY agent/runner/package*.json ./
 ...
-COPY container/agent-runner/ ./
+COPY agent/runner/ ./
 ```
 
-Then add COPY line after `COPY container/agent-runner/ ./` and before `RUN npm run build`:
+Then add COPY line after `COPY agent/runner/ ./` and before `RUN npm run build`:
 ```dockerfile
 # Copy skill MCP tools
 COPY .claude/skills/x-integration/agent.ts ./src/skills/x-integration/
@@ -260,12 +260,12 @@ cat data/x-auth.json  # Should show {"authenticated": true, ...}
 ### 3. Rebuild Container
 
 ```bash
-./container/build.sh
+./docker/build.sh
 ```
 
 **Verify success:**
 ```bash
-./container/build.sh 2>&1 | grep -i "agent.ts"  # Should show COPY line
+./docker/build.sh 2>&1 | grep -i "agent.ts"  # Should show COPY line
 ```
 
 ### 4. Restart Service
@@ -403,7 +403,7 @@ If MCP tools not found in container:
 
 ```bash
 # Verify build copies skill
-./container/build.sh 2>&1 | grep -i skill
+./docker/build.sh 2>&1 | grep -i skill
 
 # Check container has the file
 docker run motherclaw-agent ls -la /app/src/skills/

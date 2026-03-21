@@ -168,7 +168,7 @@ export async function sendPoolMessage(
 
 ### Step 3: Add sender Parameter to MCP Tool
 
-Read `container/agent-runner/src/ipc-mcp-stdio.ts` and update the `send_message` tool to accept an optional `sender` parameter:
+Read `agent/runner/src/ipc-mcp-stdio.ts` and update the `send_message` tool to accept an optional `sender` parameter:
 
 Change the tool's schema from:
 ```typescript
@@ -320,7 +320,7 @@ Also add `TELEGRAM_BOT_POOL` to the launchd plist (`~/Library/LaunchAgents/com.m
 
 ```bash
 npm run build
-./container/build.sh  # Required — MCP tool changed
+./docker/build.sh  # Required — MCP tool changed
 # macOS:
 launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist
 launchctl load ~/Library/LaunchAgents/com.motherclaw.plist
@@ -378,7 +378,7 @@ To remove Agent Swarm support while keeping basic Telegram:
 2. Remove pool code from `src/channels/telegram.ts` (`poolApis`, `senderBotMap`, `initBotPool`, `sendPoolMessage`)
 3. Remove pool routing from IPC handler in `src/index.ts` (revert to plain `sendMessage`)
 4. Remove `initBotPool` call from `main()`
-5. Remove `sender` param from MCP tool in `container/agent-runner/src/ipc-mcp-stdio.ts`
+5. Remove `sender` param from MCP tool in `agent/runner/src/ipc-mcp-stdio.ts`
 6. Remove Agent Teams section from group CLAUDE.md files
 7. Remove `TELEGRAM_BOT_POOL` from `.env`, `data/env/env`, and launchd plist/systemd unit
-8. Rebuild: `npm run build && ./container/build.sh && launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist && launchctl load ~/Library/LaunchAgents/com.motherclaw.plist` (macOS) or `npm run build && ./container/build.sh && systemctl --user restart motherclaw` (Linux)
+8. Rebuild: `npm run build && ./docker/build.sh && launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist && launchctl load ~/Library/LaunchAgents/com.motherclaw.plist` (macOS) or `npm run build && ./docker/build.sh && systemctl --user restart motherclaw` (Linux)

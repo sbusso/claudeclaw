@@ -167,7 +167,7 @@ describe('buildSandboxArgs', () => {
     expect(args).toContain('--');
     expect(args).toContain('node');
     expect(args[args.length - 1]).toMatch(
-      /container\/agent-runner\/dist\/index\.js$/,
+      /agent\/runner\/dist\/index\.js$/,
     );
   });
 });

@@ -268,15 +268,18 @@ motherclaw/
 │   ├── task-scheduler.ts          # Runs scheduled tasks when due
 │   └── container-runner.ts        # Spawns agents in containers
 │
-├── container/
-│   ├── Dockerfile                 # Container image (runs as 'node' user, includes Claude Code CLI)
-│   ├── build.sh                   # Build script for container image
-│   ├── agent-runner/              # Code that runs inside the container
+├── agent/                           # Shared: runs inside sandbox OR container
+│   ├── runner/                      # Agent runner (Claude Agent SDK)
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── src/
-│   │       ├── index.ts           # Entry point (query loop, IPC polling, session resume)
-│   │       └── ipc-mcp-stdio.ts   # Stdio-based MCP server for host communication
+│   │       ├── index.ts             # Entry point (query loop, IPC polling, session resume)
+│   │       └── ipc-mcp-stdio.ts     # Stdio-based MCP server for host communication
+│   └── skills/                      # Skills available to agents
+│
+├── docker/
+│   ├── Dockerfile                   # Container image (runs as 'node' user, includes Claude Code CLI)
+│   └── build.sh                     # Build script for container image
 │   └── skills/
 │       └── agent-browser.md       # Browser automation skill
 │

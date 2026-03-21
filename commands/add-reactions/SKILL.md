@@ -48,8 +48,8 @@ This adds:
 - `scripts/migrate-reactions.ts` (database migration for `reactions` table with composite PK and indexes)
 - `src/status-tracker.ts` (forward-only emoji state machine for message lifecycle signaling, with persistence and retry)
 - `src/status-tracker.test.ts` (unit tests for StatusTracker)
-- `container/skills/reactions/SKILL.md` (agent-facing documentation for the `react_to_message` MCP tool)
-- Reaction support in `src/orchestrator/db.ts`, `src/channels/whatsapp.ts`, `src/orchestrator/types.ts`, `src/orchestrator/ipc.ts`, `src/index.ts`, `src/group-queue.ts`, and `container/agent-runner/src/ipc-mcp-stdio.ts`
+- `agent/skills/reactions/SKILL.md` (agent-facing documentation for the `react_to_message` MCP tool)
+- Reaction support in `src/orchestrator/db.ts`, `src/channels/whatsapp.ts`, `src/orchestrator/types.ts`, `src/orchestrator/ipc.ts`, `src/index.ts`, `src/group-queue.ts`, and `agent/runner/src/ipc-mcp-stdio.ts`
 
 ### Run database migration
 

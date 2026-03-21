@@ -4,7 +4,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 IMAGE_NAME="motherclaw-agent"
 TAG="${1:-latest}"
@@ -13,7 +14,7 @@ CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-container}"
 echo "Building MotherClaw agent container image..."
 echo "Image: ${IMAGE_NAME}:${TAG}"
 
-${CONTAINER_RUNTIME} build -t "${IMAGE_NAME}:${TAG}" .
+${CONTAINER_RUNTIME} build -f docker/Dockerfile -t "${IMAGE_NAME}:${TAG}" .
 
 echo ""
 echo "Build complete!"

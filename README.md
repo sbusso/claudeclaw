@@ -148,8 +148,12 @@ src/
     slack.ts                       # Slack (Socket Mode, thread JIDs, reaction typing)
   triage/
     index.ts                       # Triage extension registration
-container/
-  agent-runner/src/index.ts        # Runs inside sandbox/container — Claude Agent SDK
+agent/
+  runner/src/index.ts              # Runs inside sandbox/container — Claude Agent SDK
+  skills/                          # Skills available to agents
+docker/
+  Dockerfile                       # Container image definition
+  build.sh                         # Container build script
 groups/*/CLAUDE.md                 # Per-group memory (isolated)
 ```
 

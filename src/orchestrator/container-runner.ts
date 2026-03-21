@@ -152,8 +152,8 @@ function buildVolumeMounts(
     );
   }
 
-  // Sync skills from container/skills/ into each group's .claude/skills/
-  const skillsSrc = path.join(process.cwd(), 'container', 'skills');
+  // Sync skills from agent/skills/ into each group's .claude/skills/
+  const skillsSrc = path.join(process.cwd(), 'agent', 'skills');
   const skillsDst = path.join(groupSessionsDir, 'skills');
   if (fs.existsSync(skillsSrc)) {
     for (const skillDir of fs.readdirSync(skillsSrc)) {
@@ -186,8 +186,8 @@ function buildVolumeMounts(
   // groups. Recompiled on container startup via entrypoint.sh.
   const agentRunnerSrc = path.join(
     projectRoot,
-    'container',
-    'agent-runner',
+    'agent',
+    'runner',
     'src',
   );
   const groupAgentRunnerDir = path.join(
