@@ -8,7 +8,7 @@ vi.mock('../logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-vi.mock('../env.js', () => ({
+vi.mock('../orchestrator/env.js', () => ({
   readEnvFile: () => ({ TICKET_DEV_CHANNEL_JID: 'slack:CDEV' }),
 }));
 
