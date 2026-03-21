@@ -62,7 +62,7 @@ This merges in:
 - `container/agent-runner/src/ollama-mcp-stdio.ts` (Ollama MCP server)
 - `scripts/ollama-watch.sh` (macOS notification watcher)
 - Ollama MCP config in `container/agent-runner/src/index.ts` (allowedTools + mcpServers)
-- `[OLLAMA]` log surfacing in `src/container-runner.ts`
+- `[OLLAMA]` log surfacing in `src/orchestrator/container-runner.ts`
 - `OLLAMA_HOST` in `.env.example`
 
 If the merge reports conflicts, resolve them by reading the conflicted files and understanding the intent of both sides.

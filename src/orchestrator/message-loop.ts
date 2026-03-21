@@ -232,7 +232,7 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
 
   // For trigger-required channels, reply in a thread (using the trigger message ts).
   // This creates a conversation thread that we register with requiresTrigger: false
-  // so follow-up replies don't need @NanoDev.
+  // so follow-up replies don't need the trigger word.
   const triggerMsg = missedMessages.find((m) =>
     TRIGGER_PATTERN.test(m.content.trim()),
   );

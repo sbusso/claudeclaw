@@ -51,7 +51,7 @@ This merges in:
 - `src/channels/gmail.ts` (GmailChannel class with self-registration via `registerChannel`)
 - `src/channels/gmail.test.ts` (unit tests)
 - `import './gmail.js'` appended to the channel barrel file `src/channels/index.ts`
-- Gmail credentials mount (`~/.gmail-mcp`) in `src/container-runner.ts`
+- Gmail credentials mount (`~/.gmail-mcp`) in `src/orchestrator/container-runner.ts`
 - Gmail MCP server (`@gongrzhe/server-gmail-autoauth-mcp`) and `mcp__gmail__*` allowed tool in `container/agent-runner/src/index.ts`
 - `googleapis` npm dependency in `package.json`
 
@@ -190,7 +190,7 @@ npx -y @gongrzhe/server-gmail-autoauth-mcp
 
 ### Container can't access Gmail
 
-- Verify `~/.gmail-mcp` is mounted: check `src/container-runner.ts` for the `.gmail-mcp` mount
+- Verify `~/.gmail-mcp` is mounted: check `src/orchestrator/container-runner.ts` for the `.gmail-mcp` mount
 - Check container logs: `cat groups/main/logs/container-*.log | tail -50`
 
 ### Emails not being detected (Channel mode only)
@@ -202,7 +202,7 @@ npx -y @gongrzhe/server-gmail-autoauth-mcp
 
 ### Tool-only mode
 
-1. Remove `~/.gmail-mcp` mount from `src/container-runner.ts`
+1. Remove `~/.gmail-mcp` mount from `src/orchestrator/container-runner.ts`
 2. Remove `gmail` MCP server and `mcp__gmail__*` from `container/agent-runner/src/index.ts`
 3. Rebuild and restart
 4. Clear stale agent-runner copies: `rm -r data/sessions/*/agent-runner-src 2>/dev/null || true`
@@ -212,7 +212,7 @@ npx -y @gongrzhe/server-gmail-autoauth-mcp
 
 1. Delete `src/channels/gmail.ts` and `src/channels/gmail.test.ts`
 2. Remove `import './gmail.js'` from `src/channels/index.ts`
-3. Remove `~/.gmail-mcp` mount from `src/container-runner.ts`
+3. Remove `~/.gmail-mcp` mount from `src/orchestrator/container-runner.ts`
 4. Remove `gmail` MCP server and `mcp__gmail__*` from `container/agent-runner/src/index.ts`
 5. Uninstall: `npm uninstall googleapis`
 6. Rebuild and restart

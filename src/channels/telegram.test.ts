@@ -3,19 +3,19 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // --- Mocks ---
 
 // Mock registry (registerChannel runs at import time)
-vi.mock('./registry.js', () => ({ registerChannel: vi.fn() }));
+vi.mock('../orchestrator/channel-registry.js', () => ({ registerChannel: vi.fn() }));
 
 // Mock env reader (used by the factory, not needed in unit tests)
-vi.mock('../env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
+vi.mock('../orchestrator/env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
 
 // Mock config
-vi.mock('../config.js', () => ({
+vi.mock('../orchestrator/config.js', () => ({
   ASSISTANT_NAME: 'Andy',
   TRIGGER_PATTERN: /^@Andy\b/i,
 }));
 
 // Mock logger
-vi.mock('../logger.js', () => ({
+vi.mock('../orchestrator/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

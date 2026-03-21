@@ -72,7 +72,7 @@ git merge whatsapp/main || {
 This merges in:
 - `src/channels/whatsapp.ts` (WhatsAppChannel class with self-registration via `registerChannel`)
 - `src/channels/whatsapp.test.ts` (41 unit tests)
-- `src/whatsapp-auth.ts` (standalone WhatsApp authentication script)
+- `src/channels/whatsapp-auth.ts` (standalone WhatsApp authentication script)
 - `setup/whatsapp-auth.ts` (WhatsApp auth setup step)
 - `import './whatsapp.js'` appended to the channel barrel file `src/channels/index.ts`
 - `'whatsapp-auth'` step added to `setup/index.ts`
@@ -296,7 +296,7 @@ tail -f logs/nanoclaw.log
 QR codes expire after ~60 seconds. Re-run the auth command:
 
 ```bash
-rm -rf store/auth/ && npx tsx src/whatsapp-auth.ts
+rm -rf store/auth/ && npx tsx src/channels/whatsapp-auth.ts
 ```
 
 ### Pairing code not working
@@ -304,7 +304,7 @@ rm -rf store/auth/ && npx tsx src/whatsapp-auth.ts
 Codes expire in ~60 seconds. To retry:
 
 ```bash
-rm -rf store/auth/ && npx tsx src/whatsapp-auth.ts --pairing-code --phone <phone>
+rm -rf store/auth/ && npx tsx src/channels/whatsapp-auth.ts --pairing-code --phone <phone>
 ```
 
 Enter the code **immediately** when it appears. Also ensure:

@@ -64,7 +64,7 @@ grep "PARALLEL_API_KEY" .env | head -c 50
 
 ### 3. Update Container Runner
 
-Add `PARALLEL_API_KEY` to allowed environment variables in `src/container-runner.ts`:
+Add `PARALLEL_API_KEY` to allowed environment variables in `src/orchestrator/container-runner.ts`:
 
 Find the line:
 ```typescript

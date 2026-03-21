@@ -42,7 +42,7 @@ Apple Container requires macOS. It does not work on Linux.
 ### Check if already applied
 
 ```bash
-grep "CONTAINER_RUNTIME_BIN" src/container-runtime.ts
+grep "CONTAINER_RUNTIME_BIN" src/orchestrator/container-runtime.ts
 ```
 
 If it already shows `'container'`, the runtime is already Apple Container. Skip to Phase 3.
@@ -69,9 +69,9 @@ git merge upstream/skill/apple-container
 ```
 
 This merges in:
-- `src/container-runtime.ts` — Apple Container implementation (replaces Docker)
+- `src/orchestrator/container-runtime.ts` — Apple Container implementation (replaces Docker)
 - `src/container-runtime.test.ts` — Apple Container-specific tests
-- `src/container-runner.ts` — .env shadow mount fix and privilege dropping
+- `src/orchestrator/container-runner.ts` — .env shadow mount fix and privilege dropping
 - `container/Dockerfile` — entrypoint that shadows .env via `mount --bind`
 - `container/build.sh` — default runtime set to `container`
 
@@ -168,8 +168,8 @@ Check directory permissions on the host. The container runs as uid 1000.
 
 | File | Type of Change |
 |------|----------------|
-| `src/container-runtime.ts` | Full replacement — Docker → Apple Container API |
+| `src/orchestrator/container-runtime.ts` | Full replacement — Docker → Apple Container API |
 | `src/container-runtime.test.ts` | Full replacement — tests for Apple Container behavior |
-| `src/container-runner.ts` | .env shadow mount removed, main containers start as root with privilege drop |
+| `src/orchestrator/container-runner.ts` | .env shadow mount removed, main containers start as root with privilege drop |
 | `container/Dockerfile` | Entrypoint: `mount --bind` for .env shadowing, `setpriv` privilege drop |
 | `container/build.sh` | Default runtime: `docker` → `container` |

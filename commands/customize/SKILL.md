@@ -20,12 +20,12 @@ This skill helps users add capabilities or modify behavior. Use AskUserQuestion 
 |------|---------|
 | `src/index.ts` | Orchestrator: state, message loop, agent invocation |
 | `src/channels/whatsapp.ts` | WhatsApp connection, auth, send/receive |
-| `src/ipc.ts` | IPC watcher and task processing |
-| `src/router.ts` | Message formatting and outbound routing |
-| `src/types.ts` | TypeScript interfaces (includes Channel) |
-| `src/config.ts` | Assistant name, trigger pattern, directories |
-| `src/db.ts` | Database initialization and queries |
-| `src/whatsapp-auth.ts` | Standalone WhatsApp authentication script |
+| `src/orchestrator/ipc.ts` | IPC watcher and task processing |
+| `src/orchestrator/router.ts` | Message formatting and outbound routing |
+| `src/orchestrator/types.ts` | TypeScript interfaces (includes Channel) |
+| `src/orchestrator/config.ts` | Assistant name, trigger pattern, directories |
+| `src/orchestrator/db.ts` | Database initialization and queries |
+| `src/channels/whatsapp-auth.ts` | Standalone WhatsApp authentication script |
 | `groups/CLAUDE.md` | Global memory/persona |
 
 ## Common Customization Patterns
@@ -39,7 +39,7 @@ Questions to ask:
 - Should messages from this channel go to existing groups or new ones?
 
 Implementation pattern:
-1. Create `src/channels/{name}.ts` implementing the `Channel` interface from `src/types.ts` (see `src/channels/whatsapp.ts` for reference)
+1. Create `src/channels/{name}.ts` implementing the `Channel` interface from `src/orchestrator/types.ts` (see `src/channels/whatsapp.ts` for reference)
 2. Add the channel instance to `main()` in `src/index.ts` and wire callbacks (`onMessage`, `onChatMetadata`)
 3. Messages are stored via the `onMessage` callback; routing is automatic via `ownsJid()`
 
@@ -51,7 +51,7 @@ Questions to ask:
 - Which groups should have access?
 
 Implementation:
-1. Add MCP server config to the container settings (see `src/container-runner.ts` for how MCP servers are mounted)
+1. Add MCP server config to the container settings (see `src/orchestrator/container-runner.ts` for how MCP servers are mounted)
 2. Document available tools in `groups/CLAUDE.md`
 
 ### Changing Assistant Behavior
@@ -60,7 +60,7 @@ Questions to ask:
 - What aspect? (name, trigger, persona, response style)
 - Apply to all groups or specific ones?
 
-Simple changes → edit `src/config.ts`
+Simple changes → edit `src/orchestrator/config.ts`
 Persona changes → edit `groups/CLAUDE.md`
 Per-group behavior → edit specific group's `CLAUDE.md`
 
