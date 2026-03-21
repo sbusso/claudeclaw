@@ -1,29 +1,41 @@
-/**
- * Read environment variables from .env file.
- * Secrets stay in .env, never in process.env.
- */
 import fs from 'fs';
 import path from 'path';
+import { logger } from './logger.js';
 
+/**
+ * Parse the .env file and return values for the requested keys.
+ * Does NOT load anything into process.env — callers decide what to
+ * do with the values. This keeps secrets out of the process environment
+ * so they don't leak to child processes.
+ */
 export function readEnvFile(keys: string[]): Record<string, string> {
+  const envFile = path.join(process.cwd(), '.env');
+  let content: string;
+  try {
+    content = fs.readFileSync(envFile, 'utf-8');
+  } catch (err) {
+    logger.debug({ err }, '.env file not found, using defaults');
+    return {};
+  }
+
   const result: Record<string, string> = {};
-  const envPath = path.join(process.cwd(), '.env');
+  const wanted = new Set(keys);
 
-  if (!fs.existsSync(envPath)) return result;
-
-  const content = fs.readFileSync(envPath, 'utf-8');
-  const lines = content.split('\n');
-
-  for (const line of lines) {
+  for (const line of content.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx === -1) continue;
     const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim();
-    if (keys.includes(key)) {
-      result[key] = value;
+    if (!wanted.has(key)) continue;
+    let value = trimmed.slice(eqIdx + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
     }
+    if (value) result[key] = value;
   }
 
   return result;
