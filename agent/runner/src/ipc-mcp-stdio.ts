@@ -334,6 +334,170 @@ Use available_groups.json to find the JID for a group. The folder name must be c
   },
 );
 
+// ---------------------------------------------------------------------------
+// Memory tools — lightweight, file-based, QMD-upgradeable
+// ---------------------------------------------------------------------------
+
+const WORKSPACE_GROUP = process.env.MOTHERCLAW_GROUP_DIR || '/workspace/group';
+
+/** Recursively find .md files under a directory */
+function findMarkdownFiles(dir: string): string[] {
+  const results: string[] = [];
+  if (!fs.existsSync(dir)) return results;
+  const walk = (d: string) => {
+    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        results.push(full);
+      }
+    }
+  };
+  walk(dir);
+  return results;
+}
+
+server.tool(
+  'memory_search',
+  `Search across all memory files (CLAUDE.md, daily logs, topics, archived conversations) for matching content. Returns matching lines with file paths and context. Use this to recall past decisions, facts, or conversation details.`,
+  {
+    query: z.string().describe('Search query — keywords or phrase to find in memory files'),
+    max_results: z.number().default(20).describe('Maximum number of matching lines to return'),
+  },
+  async (args) => {
+    const searchDirs = [WORKSPACE_GROUP];
+    const allFiles = searchDirs.flatMap(findMarkdownFiles);
+
+    if (allFiles.length === 0) {
+      return { content: [{ type: 'text' as const, text: 'No memory files found.' }] };
+    }
+
+    const queryLower = args.query.toLowerCase();
+    const queryTerms = queryLower.split(/\s+/).filter(Boolean);
+    const results: { file: string; line: number; text: string; score: number }[] = [];
+
+    for (const filePath of allFiles) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const lines = content.split('\n');
+        const relPath = path.relative(WORKSPACE_GROUP, filePath);
+
+        for (let i = 0; i < lines.length; i++) {
+          const lineLower = lines[i].toLowerCase();
+          // Score: count how many query terms match
+          const score = queryTerms.filter((t) => lineLower.includes(t)).length;
+          if (score > 0) {
+            results.push({ file: relPath, line: i + 1, text: lines[i].trim(), score });
+          }
+        }
+      } catch {
+        // Skip unreadable files
+      }
+    }
+
+    // Sort by score descending, take top N
+    results.sort((a, b) => b.score - a.score);
+    const top = results.slice(0, args.max_results);
+
+    if (top.length === 0) {
+      return { content: [{ type: 'text' as const, text: `No matches found for "${args.query}".` }] };
+    }
+
+    const formatted = top
+      .map((r) => `${r.file}:${r.line}: ${r.text}`)
+      .join('\n');
+
+    return {
+      content: [{ type: 'text' as const, text: `Found ${top.length} matches (of ${results.length} total):\n\n${formatted}` }],
+    };
+  },
+);
+
+server.tool(
+  'memory_save',
+  `Save a fact, decision, preference, or note to persistent memory. Choose the right category:
+• "daily" — append to today's daily log (memory/YYYY-MM-DD.md). Use for transient context, meeting notes, daily events.
+• "topic" — append to a topic-specific file (memory/topics/{topic}.md). Use for project notes, per-person context, domain knowledge.
+• "longterm" — append to CLAUDE.md (loaded every session). Use for durable facts, preferences, decisions that matter always.`,
+  {
+    content: z.string().describe('The fact, note, or decision to save'),
+    category: z.enum(['daily', 'topic', 'longterm']).describe('Where to save: daily log, topic file, or long-term CLAUDE.md'),
+    topic: z.string().optional().describe('Topic name (required when category="topic", e.g., "project-alpha", "user-preferences")'),
+  },
+  async (args) => {
+    const timestamp = new Date().toISOString();
+    const date = timestamp.split('T')[0];
+    let filePath: string;
+    let label: string;
+
+    if (args.category === 'daily') {
+      filePath = path.join(WORKSPACE_GROUP, 'memory', `${date}.md`);
+      label = `memory/${date}.md`;
+    } else if (args.category === 'topic' && args.topic) {
+      const safeTopic = args.topic.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      filePath = path.join(WORKSPACE_GROUP, 'memory', 'topics', `${safeTopic}.md`);
+      label = `memory/topics/${safeTopic}.md`;
+    } else {
+      filePath = path.join(WORKSPACE_GROUP, 'CLAUDE.md');
+      label = 'CLAUDE.md';
+    }
+
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+
+    // Add header if file is new
+    if (!fs.existsSync(filePath)) {
+      if (args.category === 'daily') {
+        fs.writeFileSync(filePath, `# Memory — ${date}\n\n`);
+      } else if (args.category === 'topic' && args.topic) {
+        fs.writeFileSync(filePath, `# ${args.topic}\n\n`);
+      }
+    }
+
+    fs.appendFileSync(filePath, `- [${timestamp.split('T')[1].split('.')[0]}] ${args.content}\n`);
+
+    return {
+      content: [{ type: 'text' as const, text: `Saved to ${label}` }],
+    };
+  },
+);
+
+server.tool(
+  'memory_get',
+  `Read a specific memory file. Returns empty text if the file doesn't exist (no error). Use for reading daily logs, topic files, or the main CLAUDE.md.`,
+  {
+    file: z.string().describe('Relative path from group root, e.g., "memory/2026-03-21.md", "memory/topics/project-alpha.md", "CLAUDE.md"'),
+  },
+  async (args) => {
+    // Prevent directory traversal
+    const normalized = path.normalize(args.file);
+    if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
+      return {
+        content: [{ type: 'text' as const, text: '' }],
+      };
+    }
+
+    const filePath = path.join(WORKSPACE_GROUP, normalized);
+
+    if (!fs.existsSync(filePath)) {
+      return {
+        content: [{ type: 'text' as const, text: '' }],
+      };
+    }
+
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return {
+        content: [{ type: 'text' as const, text: content }],
+      };
+    } catch {
+      return {
+        content: [{ type: 'text' as const, text: '' }],
+      };
+    }
+  },
+);
+
 // Start the stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);

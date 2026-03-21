@@ -57,6 +57,26 @@ Per-group override: set `"runtime": "sandbox"` in the registered group config.
 
 **Config reading:** MotherClaw does NOT use `dotenv`. The `RUNTIME` value in `.env` is read via `readEnvFile()` in `config.ts`.
 
+## Memory System
+
+Agents have structured memory tools via MCP:
+
+- **`memory_save`** — Append facts/notes to memory. Categories: `daily` (memory/YYYY-MM-DD.md), `topic` (memory/topics/{name}.md), `longterm` (CLAUDE.md)
+- **`memory_search`** — Grep-based search across all memory files, CLAUDE.md, and archived conversations. Upgradeable to QMD semantic search via `/add-qmd`.
+- **`memory_get`** — Read a specific memory file by relative path. Returns empty if not found.
+
+Memory files per group:
+```
+groups/{folder}/
+  CLAUDE.md              # Long-term memory (loaded by SDK every session)
+  memory/
+    YYYY-MM-DD.md        # Daily append-only logs
+    topics/{name}.md     # Topic-specific memory
+  conversations/         # Archived transcripts (from PreCompact hook)
+```
+
+Before context compaction, the PreCompact hook automatically archives the conversation and writes a summary to the daily memory log (memory flush).
+
 ## Per-Group Agent Config
 
 Groups can override agent behavior via `agentConfig` on `RegisteredGroup`:
