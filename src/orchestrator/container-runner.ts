@@ -32,8 +32,8 @@ import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
 
 // Sentinel markers for robust output parsing (must match agent-runner)
-const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
-const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
+const OUTPUT_START_MARKER = '---MOTHERCLAW_OUTPUT_START---';
+const OUTPUT_END_MARKER = '---MOTHERCLAW_OUTPUT_END---';
 
 export interface ContainerInput {
   prompt: string;
