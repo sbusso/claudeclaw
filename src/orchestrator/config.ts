@@ -37,7 +37,11 @@ export const SENDER_ALLOWLIST_PATH = path.join(
   'motherclaw',
   'sender-allowlist.json',
 );
-export const STORE_DIR = path.resolve(PROJECT_ROOT, 'store');
+// Use CLAUDE_PLUGIN_DATA for persistent state if available (v2.1.78+),
+// falls back to project-local store/ directory
+export const STORE_DIR = process.env.CLAUDE_PLUGIN_DATA
+  ? path.resolve(process.env.CLAUDE_PLUGIN_DATA)
+  : path.resolve(PROJECT_ROOT, 'store');
 export const GROUPS_DIR = path.resolve(PROJECT_ROOT, 'groups');
 export const DATA_DIR = path.resolve(PROJECT_ROOT, 'data');
 

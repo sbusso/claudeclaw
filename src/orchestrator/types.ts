@@ -34,8 +34,10 @@ export interface ContainerConfig {
 
 export interface AgentConfig {
   model?: string;              // 'sonnet' | 'opus' | 'haiku' | full model ID
+  effort?: 'low' | 'medium' | 'high'; // Model reasoning effort (v2.1.78+)
   systemPrompt?: string;       // Appended to agent's system context
   allowedTools?: string[];     // Tool allowlist override (empty = use defaults)
+  disallowedTools?: string[];  // Tool blacklist (v2.1.78+ — applied on top of allowlist)
   maxTurns?: number;           // Max conversation turns
   costLimitUsd?: number;       // Per-run budget cap
 }

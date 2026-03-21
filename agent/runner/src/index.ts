@@ -21,8 +21,10 @@ import { fileURLToPath } from 'url';
 
 interface AgentConfig {
   model?: string;
+  effort?: 'low' | 'medium' | 'high';
   systemPrompt?: string;
   allowedTools?: string[];
+  disallowedTools?: string[];
   maxTurns?: number;
   costLimitUsd?: number;
 }
@@ -224,6 +226,56 @@ function createPreCompactHook(assistantName?: string): HookCallback {
       }
     } catch (err) {
       log(`Failed to archive transcript: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    return {};
+  };
+}
+
+/**
+ * PostCompact hook — verify memory flush succeeded and log compaction event.
+ */
+function createPostCompactHook(): HookCallback {
+  return async (_input, _toolUseId, _context) => {
+    const date = new Date().toISOString().split('T')[0];
+    const memoryFile = path.join(WORKSPACE_GROUP, 'memory', `${date}.md`);
+
+    if (fs.existsSync(memoryFile)) {
+      log('PostCompact: memory flush verified — daily log exists');
+    } else {
+      log('PostCompact: no daily memory log found — PreCompact flush may have failed');
+    }
+
+    return {};
+  };
+}
+
+/**
+ * StopFailure hook — fires on API errors (rate limits, auth failures).
+ * Writes a notification via IPC so the user gets informed through their channel.
+ */
+function createStopFailureHook(chatJid: string): HookCallback {
+  return async (input, _toolUseId, _context) => {
+    const failure = input as { error?: string; type?: string };
+    const errorMsg = failure.error || failure.type || 'Unknown API error';
+    log(`StopFailure: ${errorMsg}`);
+
+    // Write IPC message to notify user through their channel
+    try {
+      const ipcMessagesDir = path.join(WORKSPACE_IPC, 'messages');
+      fs.mkdirSync(ipcMessagesDir, { recursive: true });
+      const filename = `${Date.now()}-stop-failure.json`;
+      const data = {
+        type: 'message',
+        chatJid,
+        text: `⚠️ Agent stopped: ${errorMsg}`,
+        timestamp: new Date().toISOString(),
+      };
+      const tempPath = path.join(ipcMessagesDir, `${filename}.tmp`);
+      fs.writeFileSync(tempPath, JSON.stringify(data, null, 2));
+      fs.renameSync(tempPath, path.join(ipcMessagesDir, filename));
+    } catch (ipcErr) {
+      log(`Failed to write StopFailure IPC notification: ${ipcErr instanceof Error ? ipcErr.message : String(ipcErr)}`);
     }
 
     return {};
@@ -494,6 +546,8 @@ async function runQuery(
     },
     hooks: {
       PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
+      PostCompact: [{ hooks: [createPostCompactHook()] }],
+      StopFailure: [{ hooks: [createStopFailureHook(containerInput.chatJid)] }],
     },
   };
 
@@ -505,6 +559,16 @@ async function runQuery(
   // Apply per-group maxTurns override
   if (agentCfg?.maxTurns) {
     queryOptions.maxTurns = agentCfg.maxTurns;
+  }
+
+  // Apply per-group effort override (v2.1.78+)
+  if (agentCfg?.effort) {
+    queryOptions.effort = agentCfg.effort;
+  }
+
+  // Apply per-group disallowed tools (v2.1.78+ — blacklist on top of allowlist)
+  if (agentCfg?.disallowedTools && agentCfg.disallowedTools.length > 0) {
+    queryOptions.disallowedTools = agentCfg.disallowedTools;
   }
 
   for await (const message of query({
