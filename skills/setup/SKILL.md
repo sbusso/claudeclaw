@@ -13,19 +13,18 @@ Run setup steps automatically. Only pause when user action is required (channel 
 
 ## Mode Detection
 
-Before any steps, detect the execution mode.
+Before any steps, detect the execution mode:
 
-The plugin data directory is: `${CLAUDE_PLUGIN_DATA}`
-The plugin root directory is: `${CLAUDE_PLUGIN_ROOT}`
-
-Check if the plugin data path is populated (Claude Code substitutes `${CLAUDE_PLUGIN_DATA}` with the actual path for plugins). Run:
 ```bash
-ls -d "${CLAUDE_PLUGIN_DATA}" 2>/dev/null && echo "PLUGIN_MODE" || echo "DEVELOPER_MODE"
+cat .claude-plugin/plugin.json 2>/dev/null | grep '"name": "motherclaw"' && echo "DEVELOPER_MODE" || echo "PLUGIN_MODE"
 ```
 
-**If PLUGIN_MODE → Plugin mode:**
+If `.claude-plugin/plugin.json` exists in the current directory AND contains `"name": "motherclaw"`, we're inside the MotherClaw repo → **Developer mode**. Otherwise, the skill was loaded via `--plugin-dir` → **Plugin mode**.
+
+**Plugin mode** (no `.claude-plugin/` in cwd):
 - Skip step 0 (Git & Fork) entirely
-- The plugin code is at `${CLAUDE_PLUGIN_ROOT}`
+- Plugin data directory: `${CLAUDE_PLUGIN_DATA}`
+- Plugin code directory: `${CLAUDE_PLUGIN_ROOT}`
 
 Instance detection:
 - If `${CLAUDE_PLUGIN_DATA}/instances.json` exists → read default instance, set `MOTHERCLAW_INSTANCE`
@@ -37,9 +36,9 @@ Instance detection:
 
 Print: "Running as MotherClaw plugin, instance: $MOTHERCLAW_INSTANCE"
 Ensure instance directories exist: `mkdir -p ${CLAUDE_PLUGIN_DATA}/instances/$MOTHERCLAW_INSTANCE/{store,groups,logs}`
-All subsequent steps use the instance directory for state paths. The plugin code (dist/service.js, agent/runner) is at `${CLAUDE_PLUGIN_ROOT}`.
+All subsequent steps use the instance directory for state paths. Plugin code (dist/service.js, agent/runner) is at `${CLAUDE_PLUGIN_ROOT}`.
 
-**If DEVELOPER_MODE → Developer mode:**
+**Developer mode** (`.claude-plugin/` in cwd):
 - Proceed with all steps unchanged
 - State lives in the current working directory
 

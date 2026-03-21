@@ -4,7 +4,7 @@ description: List all MotherClaw instances with status
 
 # List Instances
 
-If `${CLAUDE_PLUGIN_DATA}` is not set, print "Instance management is only available in plugin mode." and exit.
+Check: `cat .claude-plugin/plugin.json 2>/dev/null | grep '"name": "motherclaw"'`. If it matches, we're in the MotherClaw repo (developer mode) — print "Instance management is only available in plugin mode." and exit.
 
 Read `${CLAUDE_PLUGIN_DATA}/instances.json`. For each instance, show:
 
