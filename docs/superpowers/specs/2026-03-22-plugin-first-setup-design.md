@@ -131,13 +131,34 @@ When a plugin user wants to customize, `/customize` detects plugin mode and offe
 
 This is a clean break — no hybrid state.
 
-## Customization Migration (TBD)
+## Customization Migration
 
-The `/customize` fork-and-migrate flow needs further design for:
-- `messages.db` migration: copy to new location, or start fresh?
-- Group directory paths stored in DB may need fixups
-- Running service must be stopped before migration, restarted after
-- Detailed design deferred to implementation of `/customize` skill.
+When a plugin user runs `/customize` and chooses to fork to developer mode:
+
+### What gets copied
+
+Everything from `CLAUDE_PLUGIN_DATA/` to the cloned repo:
+- `store/messages.db` — full conversation history, group registrations, sessions, scheduled tasks
+- `groups/` — all group directories with CLAUDE.md memory, auto-memory, conversation archives
+- `.env` — credentials and config
+- `logs/` — optional, user's choice
+
+### Why no path fixup is needed
+
+The DB stores group folders as **relative names** (e.g. `'main'`, `'family'`), not absolute paths. `resolveGroupFolderPath()` in `group-folder.ts` resolves them at runtime via `GROUPS_DIR`. Since `GROUPS_DIR` is derived from `STATE_ROOT` (which changes from `CLAUDE_PLUGIN_DATA` to project root), the same relative folder names resolve correctly in both modes.
+
+### Migration steps
+
+1. Stop running service: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist` (macOS) or `systemctl --user stop motherclaw` (Linux)
+2. Fork `sbusso/motherclaw` on GitHub (user does this in browser)
+3. Clone: `git clone https://github.com/<user>/motherclaw.git ~/motherclaw`
+4. Copy state: `cp -r $CLAUDE_PLUGIN_DATA/{store,groups,.env,logs} ~/motherclaw/`
+5. Clear stale sessions: `sqlite3 ~/motherclaw/store/messages.db "DELETE FROM sessions"`
+6. Install deps and build: `cd ~/motherclaw && npm install && npm run build`
+7. Re-run `/setup` step 7 (service) from inside the repo to generate new plist/systemd pointing to repo's `dist/service.js`
+8. Remove `--plugin-dir` from user's Claude Code invocation
+
+Old `CLAUDE_PLUGIN_DATA` directory is left as backup. User can delete manually after confirming migration works.
 
 ## Files to Modify
 
