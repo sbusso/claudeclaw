@@ -20,9 +20,18 @@ Run:
 
 **If CLAUDE_PLUGIN_DATA is set → Plugin mode:**
 - Skip step 0 (Git & Fork) entirely
-- Print: "Running as MotherClaw plugin. State stored in $CLAUDE_PLUGIN_DATA"
-- Ensure state directories exist: `mkdir -p $CLAUDE_PLUGIN_DATA/{store,groups,logs}`
-- All subsequent steps use CLAUDE_PLUGIN_DATA for state paths
+
+Instance detection:
+- If `$CLAUDE_PLUGIN_DATA/instances.json` exists → read default instance, set `MOTHERCLAW_INSTANCE`
+- If `$CLAUDE_PLUGIN_DATA/instances.json` does NOT exist:
+  - If legacy state exists (store/, .env in CLAUDE_PLUGIN_DATA root) → migration is automatic (handled by service startup)
+  - If no state at all → AskUserQuestion: "Create your first MotherClaw instance. What should it be called?" (default: "default")
+    - Create `$CLAUDE_PLUGIN_DATA/instances/<name>/` and `instances.json`
+    - Set `MOTHERCLAW_INSTANCE` to the new name
+
+Print: "Running as MotherClaw plugin, instance: $MOTHERCLAW_INSTANCE"
+Ensure instance directories exist: `mkdir -p $CLAUDE_PLUGIN_DATA/instances/$MOTHERCLAW_INSTANCE/{store,groups,logs}`
+All subsequent steps use the instance directory for state paths
 
 **If CLAUDE_PLUGIN_DATA is not set → Developer mode:**
 - Proceed with all steps unchanged
