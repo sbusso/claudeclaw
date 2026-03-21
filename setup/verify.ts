@@ -82,28 +82,34 @@ export async function run(_args: string[]): Promise<void> {
   }
   logger.info({ service }, 'Service status');
 
-  // 2. Check container runtime
-  let containerRuntime = 'none';
-  try {
-    execSync('command -v container', { stdio: 'ignore' });
-    containerRuntime = 'apple-container';
-  } catch {
+  // 2. Check configured runtime (from .env RUNTIME setting)
+  const runtimeEnv = readEnvFile(['RUNTIME']);
+  const configuredRuntime = process.env.RUNTIME || runtimeEnv.RUNTIME || 'container';
+
+  let containerRuntime = configuredRuntime;
+  if (configuredRuntime === 'sandbox') {
+    containerRuntime = 'sandbox';
+  } else {
+    // Container mode — check which container runtime is available
+    containerRuntime = 'none';
     try {
-      execSync('docker info', { stdio: 'ignore' });
-      containerRuntime = 'docker';
+      execSync('command -v container', { stdio: 'ignore' });
+      containerRuntime = 'apple-container';
     } catch {
-      // No runtime
+      try {
+        execSync('docker info', { stdio: 'ignore' });
+        containerRuntime = 'docker';
+      } catch {
+        // No runtime
+      }
     }
   }
 
-  // 3. Check credentials
+  // 3. Check credentials (using instance-aware env reader)
   let credentials = 'missing';
-  const envFile = path.join(projectRoot, '.env');
-  if (fs.existsSync(envFile)) {
-    const envContent = fs.readFileSync(envFile, 'utf-8');
-    if (/^(CLAUDE_CODE_OAUTH_TOKEN|ANTHROPIC_API_KEY)=/m.test(envContent)) {
-      credentials = 'configured';
-    }
+  const credEnv = readEnvFile(['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']);
+  if (credEnv.CLAUDE_CODE_OAUTH_TOKEN || credEnv.ANTHROPIC_API_KEY) {
+    credentials = 'configured';
   }
 
   // 4. Check channel auth (detect configured channels by credentials)
