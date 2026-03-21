@@ -15,6 +15,7 @@ import {
   GROUPS_DIR,
 } from './config.js';
 import { logger } from './logger.js';
+import { GroupQueue } from './group-queue.js';
 import type { Channel, NewMessage, RegisteredGroup } from './types.js';
 
 // --- State ---
@@ -26,6 +27,7 @@ let registeredGroups: Record<string, RegisteredGroup> = {};
 let messageLoopRunning = false;
 
 let channelsRef: Channel[] = [];
+const queue = new GroupQueue();
 
 // --- DB helpers ---
 
@@ -405,10 +407,25 @@ async function messageLoop(): Promise<void> {
             if (!hasTrigger) continue;
           }
 
-          // Process (spawns agent)
-          processGroupMessages(chatJid).catch((err) =>
-            logger.error({ err, chatJid }, 'Error processing group'),
+          // Try piping to active container first
+          const allPending = getMessagesSince(
+            chatJid,
+            lastAgentTimestamp[chatJid] || '',
           );
+          const formatted = formatMessages(
+            allPending.length > 0 ? allPending : groupMessages,
+          );
+
+          if (queue.sendMessage(chatJid, formatted)) {
+            lastAgentTimestamp[chatJid] =
+              (allPending.length > 0 ? allPending : groupMessages).slice(-1)[0]
+                .timestamp;
+            saveState();
+            channel.setTyping?.(chatJid, true)?.catch(() => {});
+          } else {
+            // No active container — enqueue for a new one
+            queue.enqueueMessageCheck(chatJid);
+          }
         }
       }
     } catch (err) {
@@ -448,6 +465,9 @@ export function startMessageLoop(opts: MessageLoopOpts): void {
   channelsRef = opts.channels;
 
   loadState();
+
+  // Wire the queue to process messages through our handler
+  queue.setProcessMessagesFn(processGroupMessages);
 
   logger.info(`MotherClaw running (trigger: @${ASSISTANT_NAME})`);
   messageLoop();
