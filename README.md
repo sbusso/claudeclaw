@@ -122,7 +122,9 @@ groups/{folder}/
   conversations/         # Archived transcripts (auto-saved before compaction)
 ```
 
-Before context compaction, the PreCompact hook automatically archives the conversation and writes a summary to the daily memory log — ensuring key context survives.
+Claude's built-in auto-memory and our `memory_save` tool write to the same `memory/` directory — unified store, nothing gets lost.
+
+Before context compaction, the PreCompact hook archives the conversation and writes a summary to the daily memory log. PostCompact verifies the flush succeeded. On API errors (rate limits, auth failures), the StopFailure hook notifies you through your channel instead of failing silently.
 
 **QMD upgrade:** Run `/add-qmd` to replace grep-based search with [QMD](https://github.com/tobi/qmd)'s hybrid BM25 + vector semantic search + LLM re-ranking, fully local.
 
@@ -133,10 +135,12 @@ Each group can customize its agent behavior:
 ```typescript
 agentConfig: {
   model: 'haiku',                    // sonnet | opus | haiku | full model ID
+  effort: 'low',                     // low | medium | high — reasoning effort
   systemPrompt: 'You are a ...',     // Appended to agent system context
   allowedTools: ['Bash', 'Read'],    // Override default tool allowlist
+  disallowedTools: ['WebSearch'],    // Blacklist specific tools
   maxTurns: 10,                      // Limit conversation turns
-  costLimitUsd: 0.50,                // Per-run budget cap
+  costLimitUsd: 0.50,               // Per-run budget cap
 }
 ```
 
