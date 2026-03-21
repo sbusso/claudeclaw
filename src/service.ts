@@ -7,6 +7,13 @@
  * Dev mode:   npx tsx src/service.ts
  */
 
+// Migrate legacy single-instance plugin state before anything else
+import { migrateToInstances } from './orchestrator/instance-migration.js';
+
+if (process.env.CLAUDE_PLUGIN_DATA) {
+  migrateToInstances(process.env.CLAUDE_PLUGIN_DATA);
+}
+
 // Load channels (self-registering on import)
 import './channels/index.js';
 
