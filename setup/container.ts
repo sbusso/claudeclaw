@@ -5,7 +5,7 @@
 import { execSync } from 'child_process';
 import path from 'path';
 
-import { logger } from '../src/logger.js';
+import { logger } from '../src/orchestrator/logger.js';
 import { commandExists } from './platform.js';
 import { emitStatus } from './status.js';
 

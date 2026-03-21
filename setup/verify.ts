@@ -11,9 +11,9 @@ import path from 'path';
 
 import Database from 'better-sqlite3';
 
-import { STORE_DIR } from '../src/config.js';
-import { readEnvFile } from '../src/env.js';
-import { logger } from '../src/logger.js';
+import { STORE_DIR } from '../src/orchestrator/config.js';
+import { readEnvFile } from '../src/orchestrator/env.js';
+import { logger } from '../src/orchestrator/logger.js';
 import {
   getPlatform,
   getServiceManager,
