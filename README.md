@@ -161,8 +161,22 @@ sqlite3 store/messages.db \
 ## As a Claude Code Plugin
 
 ```bash
-claude --plugin-dir ./motherclaw
+claude --plugin-dir /path/to/motherclaw
 ```
+
+In plugin mode, MotherClaw supports **multiple instances** — each with isolated state, its own background service, running simultaneously:
+
+```bash
+# First run prompts to create an instance
+# Subsequent runs auto-select the default
+
+# Override instance via env var
+MOTHERCLAW_INSTANCE=work claude --plugin-dir /path/to/motherclaw
+```
+
+Instance commands: `/instance-list`, `/instance-create`, `/instance-switch`, `/instance-delete`
+
+State lives in `CLAUDE_PLUGIN_DATA/instances/<name>/` — each instance gets its own `.env`, database, groups, and logs. Services are named per instance (`com.motherclaw.<name>.plist` on macOS).
 
 ## Philosophy
 
@@ -223,7 +237,8 @@ Single Node.js process. Channels self-register at startup — the orchestrator c
 
 ```
 src/
-  index.ts                         # Entrypoint: DB → channels → extensions → loop
+  index.ts                         # Plugin entry (Claude Code --plugin-dir, non-blocking)
+  service.ts                       # Service entry (launchd/systemd, runs message loop)
   orchestrator/
     message-loop.ts                # THE HEART: poll, trigger, thread, queue, dispatch
     sandbox-runner.ts              # Sandbox runtime (srt CLI, settings, credentials)
@@ -342,7 +357,7 @@ Ask Claude Code. "Why isn't the scheduler running?" "What's in the recent logs?"
 ```bash
 npm run build    # Compile TypeScript
 npm run dev      # Run with tsx
-npm test         # Run tests (386 tests)
+npm test         # Run tests (413 tests)
 ```
 
 ## License
