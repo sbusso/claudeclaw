@@ -30,8 +30,8 @@ src/orchestrator/container-runner.ts               container/agent-runner/
 
 | Log | Location | Content |
 |-----|----------|---------|
-| **Main app logs** | `logs/nanoclaw.log` | Host-side WhatsApp, routing, container spawning |
-| **Main app errors** | `logs/nanoclaw.error.log` | Host-side errors |
+| **Main app logs** | `logs/motherclaw.log` | Host-side WhatsApp, routing, container spawning |
+| **Main app errors** | `logs/motherclaw.error.log` | Host-side errors |
 | **Container run logs** | `groups/{folder}/logs/container-*.log` | Per-run: input, mounts, stderr, stdout |
 | **Claude sessions** | `~/.claude/projects/` | Claude Code session history |
 
@@ -278,13 +278,13 @@ rm -rf data/sessions/
 # Clear sessions for a specific group
 rm -rf data/sessions/{groupFolder}/.claude/
 
-# Also clear the session ID from NanoClaw's tracking (stored in SQLite)
+# Also clear the session ID from MotherClaw's tracking (stored in SQLite)
 sqlite3 store/messages.db "DELETE FROM sessions WHERE group_folder = '{groupFolder}'"
 ```
 
 To verify session resumption is working, check the logs for the same session ID across messages:
 ```bash
-grep "Session initialized" logs/nanoclaw.log | tail -5
+grep "Session initialized" logs/motherclaw.log | tail -5
 # Should show the SAME session ID for consecutive messages in the same group
 ```
 
@@ -379,6 +379,6 @@ echo -e "\n7. Recent container logs?"
 ls -t groups/*/logs/container-*.log 2>/dev/null | head -3 || echo "No container logs yet"
 
 echo -e "\n8. Session continuity working?"
-SESSIONS=$(grep "Session initialized" logs/nanoclaw.log 2>/dev/null | tail -5 | awk '{print $NF}' | sort -u | wc -l)
+SESSIONS=$(grep "Session initialized" logs/motherclaw.log 2>/dev/null | tail -5 | awk '{print $NF}' | sort -u | wc -l)
 [ "$SESSIONS" -le 2 ] && echo "OK (recent sessions reusing IDs)" || echo "CHECK - multiple different session IDs, may indicate resumption issues"
 ```

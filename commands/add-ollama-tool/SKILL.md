@@ -48,7 +48,7 @@ git remote -v
 If `upstream` is missing, add it:
 
 ```bash
-git remote add upstream https://github.com/qwibitai/nanoclaw.git
+git remote add upstream https://github.com/sbusso/motherclaw.git
 ```
 
 ### Merge the skill branch
@@ -100,8 +100,8 @@ OLLAMA_HOST=http://your-ollama-host:11434
 ### Restart the service
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
-# Linux: systemctl --user restart nanoclaw
+launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
+# Linux: systemctl --user restart motherclaw
 ```
 
 ## Phase 4: Verify
@@ -125,7 +125,7 @@ Run the watcher script for macOS notifications when Ollama is used:
 ### Check logs if needed
 
 ```bash
-tail -f logs/nanoclaw.log | grep -i ollama
+tail -f logs/motherclaw.log | grep -i ollama
 ```
 
 Look for:

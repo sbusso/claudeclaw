@@ -1,5 +1,5 @@
 /**
- * NanoClaw Agent Runner
+ * MotherClaw Agent Runner
  * Runs inside a container, receives config via stdin, outputs result to stdout
  *
  * Input protocol:
@@ -416,20 +416,20 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*'
+        'mcp__motherclaw__*'
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['project', 'user'],
       mcpServers: {
-        nanoclaw: {
+        motherclaw: {
           command: 'node',
           args: [mcpServerPath],
           env: {
-            NANOCLAW_CHAT_JID: containerInput.chatJid,
-            NANOCLAW_GROUP_FOLDER: containerInput.groupFolder,
-            NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
+            MOTHERCLAW_CHAT_JID: containerInput.chatJid,
+            MOTHERCLAW_GROUP_FOLDER: containerInput.groupFolder,
+            MOTHERCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
       },

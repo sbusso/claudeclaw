@@ -28,7 +28,7 @@ git fetch upstream skill/compact
 git merge upstream/skill/compact
 ```
 
-> **Note:** `upstream` is the remote pointing to `qwibitai/nanoclaw`. If using a different remote name, substitute accordingly.
+> **Note:** `upstream` is the remote pointing to `sbusso/motherclaw`. If using a different remote name, substitute accordingly.
 
 This adds:
 - `src/session-commands.ts` (extract and authorize session commands)
@@ -52,15 +52,15 @@ npm run build
 ### Restart service
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
-# Linux: systemctl --user restart nanoclaw
+launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
+# Linux: systemctl --user restart motherclaw
 ```
 
 ## Phase 3: Verify
 
 ### Integration Test
 
-1. Start NanoClaw in dev mode: `npm run dev`
+1. Start MotherClaw in dev mode: `npm run dev`
 2. From the **main group** (self-chat), send exactly: `/compact`
 3. Verify:
    - The agent acknowledges compaction (e.g., "Conversation compacted.")
@@ -101,8 +101,8 @@ launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
 ### Validation on Fresh Clone
 
 ```bash
-git clone <your-fork> /tmp/nanoclaw-test
-cd /tmp/nanoclaw-test
+git clone <your-fork> /tmp/motherclaw-test
+cd /tmp/motherclaw-test
 claude  # then run /add-compact
 npm run build
 npm test
@@ -117,7 +117,7 @@ npm test
 
 - **Main-group or trusted/admin sender only.** The main group is the user's private self-chat and is trusted (see `docs/SECURITY.md`). Non-main groups are untrusted — a careless or malicious user could wipe the agent's short-term memory. However, the device owner (`is_from_me`) is always trusted and can compact from any group.
 - **No auto-compaction.** This skill implements manual compaction only. Automatic threshold-based compaction is a separate concern and should be a separate skill.
-- **No config file.** NanoClaw's philosophy is customization through code changes, not configuration sprawl.
+- **No config file.** MotherClaw's philosophy is customization through code changes, not configuration sprawl.
 - **Transcript archived before compaction.** The existing `PreCompact` hook in the agent-runner archives the full transcript to `conversations/` before the SDK compacts it.
 - **Session continues after compaction.** This is not a destructive reset. The conversation continues with summarized context.
 
