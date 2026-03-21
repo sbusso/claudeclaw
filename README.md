@@ -2,6 +2,8 @@
 
 Persistent agent orchestrator plugin for Claude Code. Multi-channel message routing, triage, and SWE task management.
 
+Built on [NanoClaw](https://github.com/qwibitai/nanoclaw) — ported to a Claude Code plugin architecture with a pluggable extension system.
+
 ## What it does
 
 MotherClaw is a Claude Code plugin that provides an always-on message loop. It listens to channels (Slack, etc.), routes messages to Claude Code agents, and manages ongoing conversations.
