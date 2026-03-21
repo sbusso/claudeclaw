@@ -8,7 +8,7 @@ import path from 'path';
  * without actually loading services.
  */
 
-// Helper: generate a plist string the same way service.ts does
+// Helper: generate a plist string the same way service.ts does (developer mode)
 function generatePlist(
   nodePath: string,
   projectRoot: string,
@@ -34,7 +34,7 @@ function generatePlist(
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
         <key>HOME</key>
         <string>${homeDir}</string>
     </dict>
@@ -42,6 +42,50 @@ function generatePlist(
     <string>${projectRoot}/logs/motherclaw.log</string>
     <key>StandardErrorPath</key>
     <string>${projectRoot}/logs/motherclaw.error.log</string>
+</dict>
+</plist>`;
+}
+
+// Helper: generate a plist string for plugin mode
+function generatePluginPlist(
+  nodePath: string,
+  projectRoot: string,
+  homeDir: string,
+  pluginDataDir: string,
+): string {
+  const logDir = `${pluginDataDir}/logs`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.motherclaw</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${nodePath}</string>
+        <string>${projectRoot}/dist/service.js</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>${projectRoot}</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
+        <key>HOME</key>
+        <string>${homeDir}</string>
+        <key>CLAUDE_PLUGIN_DATA</key>
+        <string>${pluginDataDir}</string>
+        <key>MOTHERCLAW_ENV_FILE</key>
+        <string>${pluginDataDir}/.env</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>${logDir}/motherclaw.log</string>
+    <key>StandardErrorPath</key>
+    <string>${logDir}/motherclaw.error.log</string>
 </dict>
 </plist>`;
 }
@@ -63,7 +107,7 @@ WorkingDirectory=${projectRoot}
 Restart=always
 RestartSec=5
 Environment=HOME=${homeDir}
-Environment=PATH=/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin
+Environment=PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin
 StandardOutput=append:${projectRoot}/logs/motherclaw.log
 StandardError=append:${projectRoot}/logs/motherclaw.error.log
 
@@ -152,6 +196,66 @@ describe('systemd unit generation', () => {
     expect(unit).toContain(
       'ExecStart=/usr/bin/node /srv/motherclaw/dist/service.js',
     );
+  });
+});
+
+describe('plugin mode plist generation', () => {
+  const pluginDataDir = '/Users/testuser/.claude/plugins/motherclaw';
+
+  it('includes CLAUDE_PLUGIN_DATA env var', () => {
+    const plist = generatePluginPlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+    );
+    expect(plist).toContain('<key>CLAUDE_PLUGIN_DATA</key>');
+    expect(plist).toContain(`<string>${pluginDataDir}</string>`);
+  });
+
+  it('includes MOTHERCLAW_ENV_FILE env var', () => {
+    const plist = generatePluginPlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+    );
+    expect(plist).toContain('<key>MOTHERCLAW_ENV_FILE</key>');
+    expect(plist).toContain(`<string>${pluginDataDir}/.env</string>`);
+  });
+
+  it('includes /opt/homebrew/bin in PATH', () => {
+    const plist = generatePluginPlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+    );
+    expect(plist).toContain('/opt/homebrew/bin');
+  });
+
+  it('log paths point to CLAUDE_PLUGIN_DATA/logs/', () => {
+    const plist = generatePluginPlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+    );
+    expect(plist).toContain(`${pluginDataDir}/logs/motherclaw.log`);
+    expect(plist).toContain(`${pluginDataDir}/logs/motherclaw.error.log`);
+    // Should NOT contain projectRoot/logs
+    expect(plist).not.toContain('/home/user/motherclaw/logs/');
+  });
+});
+
+describe('developer mode plist includes /opt/homebrew/bin', () => {
+  it('PATH includes /opt/homebrew/bin', () => {
+    const plist = generatePlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+    );
+    expect(plist).toContain('/opt/homebrew/bin');
   });
 });
 
