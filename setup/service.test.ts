@@ -47,19 +47,22 @@ function generatePlist(
 }
 
 // Helper: generate a plist string for plugin mode
+// In plugin mode, instanceName always defaults to 'default', so the helper
+// must match the instance-aware format (label, env file, log paths all include instance)
 function generatePluginPlist(
   nodePath: string,
   projectRoot: string,
   homeDir: string,
   pluginDataDir: string,
+  instanceName: string = 'default',
 ): string {
-  const logDir = `${pluginDataDir}/logs`;
+  const logDir = `${pluginDataDir}/instances/${instanceName}/logs`;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.motherclaw</string>
+    <string>com.motherclaw.${instanceName}</string>
     <key>ProgramArguments</key>
     <array>
         <string>${nodePath}</string>
@@ -79,8 +82,10 @@ function generatePluginPlist(
         <string>${homeDir}</string>
         <key>CLAUDE_PLUGIN_DATA</key>
         <string>${pluginDataDir}</string>
+        <key>MOTHERCLAW_INSTANCE</key>
+        <string>${instanceName}</string>
         <key>MOTHERCLAW_ENV_FILE</key>
-        <string>${pluginDataDir}/.env</string>
+        <string>${pluginDataDir}/instances/${instanceName}/.env</string>
     </dict>
     <key>StandardOutPath</key>
     <string>${logDir}/motherclaw.log</string>
@@ -213,7 +218,7 @@ describe('plugin mode plist generation', () => {
     expect(plist).toContain(`<string>${pluginDataDir}</string>`);
   });
 
-  it('includes MOTHERCLAW_ENV_FILE env var', () => {
+  it('includes MOTHERCLAW_ENV_FILE pointing to instance .env', () => {
     const plist = generatePluginPlist(
       '/usr/local/bin/node',
       '/home/user/motherclaw',
@@ -221,7 +226,18 @@ describe('plugin mode plist generation', () => {
       pluginDataDir,
     );
     expect(plist).toContain('<key>MOTHERCLAW_ENV_FILE</key>');
-    expect(plist).toContain(`<string>${pluginDataDir}/.env</string>`);
+    expect(plist).toContain(`<string>${pluginDataDir}/instances/default/.env</string>`);
+  });
+
+  it('includes MOTHERCLAW_INSTANCE env var', () => {
+    const plist = generatePluginPlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+    );
+    expect(plist).toContain('<key>MOTHERCLAW_INSTANCE</key>');
+    expect(plist).toContain('<string>default</string>');
   });
 
   it('includes /opt/homebrew/bin in PATH', () => {
@@ -234,15 +250,15 @@ describe('plugin mode plist generation', () => {
     expect(plist).toContain('/opt/homebrew/bin');
   });
 
-  it('log paths point to CLAUDE_PLUGIN_DATA/logs/', () => {
+  it('log paths point to instance logs dir', () => {
     const plist = generatePluginPlist(
       '/usr/local/bin/node',
       '/home/user/motherclaw',
       '/home/user',
       pluginDataDir,
     );
-    expect(plist).toContain(`${pluginDataDir}/logs/motherclaw.log`);
-    expect(plist).toContain(`${pluginDataDir}/logs/motherclaw.error.log`);
+    expect(plist).toContain(`${pluginDataDir}/instances/default/logs/motherclaw.log`);
+    expect(plist).toContain(`${pluginDataDir}/instances/default/logs/motherclaw.error.log`);
     // Should NOT contain projectRoot/logs
     expect(plist).not.toContain('/home/user/motherclaw/logs/');
   });

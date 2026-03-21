@@ -41,6 +41,21 @@ describe('readEnvFile', () => {
     fs.rmSync(tmpDir, { recursive: true });
   });
 
+  it('reads from instances.json default when MOTHERCLAW_INSTANCE not set', async () => {
+    const tmpDir = path.join(process.env.TMPDIR || '/tmp', 'test-plugin-data-json');
+    fs.mkdirSync(path.join(tmpDir, 'instances', 'personal'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'instances', 'personal', '.env'), 'TEST_KEY=from_personal\n');
+    fs.writeFileSync(path.join(tmpDir, 'instances.json'), JSON.stringify({ default: 'personal', instances: {} }));
+    process.env.CLAUDE_PLUGIN_DATA = tmpDir;
+    delete process.env.MOTHERCLAW_INSTANCE;
+
+    const { readEnvFile } = await import('./env.js');
+    const result = readEnvFile(['TEST_KEY']);
+    expect(result.TEST_KEY).toBe('from_personal');
+
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
   it('reads from named instance .env when MOTHERCLAW_INSTANCE set', async () => {
     const tmpDir = path.join(process.env.TMPDIR || '/tmp', 'test-plugin-data-inst');
     const instanceDir = path.join(tmpDir, 'instances', 'work');
