@@ -202,6 +202,26 @@ function createPreCompactHook(assistantName?: string): HookCallback {
       fs.writeFileSync(filePath, markdown);
 
       log(`Archived conversation to ${filePath}`);
+
+      // Memory flush: extract key facts and append to daily memory log
+      try {
+        const memoryDir = path.join(WORKSPACE_GROUP, 'memory');
+        fs.mkdirSync(memoryDir, { recursive: true });
+        const memoryFile = path.join(memoryDir, `${date}.md`);
+
+        if (!fs.existsSync(memoryFile)) {
+          fs.writeFileSync(memoryFile, `# Memory — ${date}\n\n`);
+        }
+
+        // Save a compaction marker with summary and message count
+        const flushEntry = summary
+          ? `- [${new Date().toISOString().split('T')[1].split('.')[0]}] [compaction] ${summary} (${messages.length} messages archived)\n`
+          : `- [${new Date().toISOString().split('T')[1].split('.')[0]}] [compaction] ${messages.length} messages archived to conversations/${filename}\n`;
+        fs.appendFileSync(memoryFile, flushEntry);
+        log(`Memory flush: wrote summary to ${memoryFile}`);
+      } catch (memErr) {
+        log(`Memory flush failed: ${memErr instanceof Error ? memErr.message : String(memErr)}`);
+      }
     } catch (err) {
       log(`Failed to archive transcript: ${err instanceof Error ? err.message : String(err)}`);
     }
