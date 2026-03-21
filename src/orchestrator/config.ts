@@ -38,11 +38,14 @@ export const SENDER_ALLOWLIST_PATH = path.join(
   'sender-allowlist.json',
 );
 // Use CLAUDE_PLUGIN_DATA for persistent state if available (v2.1.78+),
-// falls back to project-local store/ directory
-export const STORE_DIR = process.env.CLAUDE_PLUGIN_DATA
+// falls back to project-local directories
+export const STATE_ROOT = process.env.CLAUDE_PLUGIN_DATA
   ? path.resolve(process.env.CLAUDE_PLUGIN_DATA)
-  : path.resolve(PROJECT_ROOT, 'store');
-export const GROUPS_DIR = path.resolve(PROJECT_ROOT, 'groups');
+  : PROJECT_ROOT;
+
+export const STORE_DIR = path.resolve(STATE_ROOT, 'store');
+export const GROUPS_DIR = path.resolve(STATE_ROOT, 'groups');
+export const LOG_DIR = path.resolve(STATE_ROOT, 'logs');
 export const DATA_DIR = path.resolve(PROJECT_ROOT, 'data');
 
 export const CONTAINER_IMAGE =
