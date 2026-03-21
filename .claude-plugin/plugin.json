@@ -1,7 +1,7 @@
 {
   "name": "motherclaw",
   "version": "0.1.0",
-  "description": "Persistent agent orchestrator for Claude Code. Multi-channel message routing, triage, and SWE task management.",
+  "description": "Persistent agent orchestrator for Claude Code. Multi-channel message routing, triage, and SWE task management. Run /motherclaw:setup to create your first instance and configure channels.",
   "author": {
     "name": "sbusso",
     "url": "https://github.com/sbusso"
