@@ -111,6 +111,8 @@ Tell the user:
 >
 > This is optional if you only want trigger-based responses via @mentioning the bot.
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 ### Build and restart
 
 ```bash

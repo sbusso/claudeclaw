@@ -36,6 +36,8 @@ Before using this skill, ensure:
    CHROME_PATH=/path/to/Google Chrome.app/Contents/MacOS/Google Chrome
    ```
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 ## Quick Start
 
 ```bash
@@ -48,6 +50,8 @@ npx dotenv -e .env -- npx tsx .claude/skills/x-integration/scripts/setup.ts
 # Verify: Output shows "COPY .claude/skills/x-integration/agent.ts"
 
 # 3. Rebuild host and restart service
+# Service name: In developer mode use com.motherclaw / motherclaw.
+# In plugin mode use com.motherclaw.<instance> / motherclaw-<instance> (MOTHERCLAW_INSTANCE).
 npm run build
 launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
 # Linux: systemctl --user restart motherclaw

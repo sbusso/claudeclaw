@@ -105,6 +105,8 @@ mkdir -p data/env && cp .env data/env/env
 
 The container reads environment from `data/env/env`, not `.env` directly.
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 ### Build and restart
 
 ```bash

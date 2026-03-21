@@ -96,6 +96,8 @@ npm run build
 
 The MotherClaw launchd service runs with a restricted PATH. `whisper-cli` and `ffmpeg` are in `/opt/homebrew/bin/` (Apple Silicon) or `/usr/local/bin/` (Intel), which may not be in the plist's PATH.
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 Check the current PATH:
 ```bash
 grep -A1 'PATH' ~/Library/LaunchAgents/com.motherclaw.plist

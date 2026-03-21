@@ -314,6 +314,8 @@ TELEGRAM_BOT_POOL=TOKEN1,TOKEN2,TOKEN3,...
 cp .env data/env/env
 ```
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 Also add `TELEGRAM_BOT_POOL` to the launchd plist (`~/Library/LaunchAgents/com.motherclaw.plist`) in the `EnvironmentVariables` dict if using launchd.
 
 ### Step 7: Rebuild and Restart

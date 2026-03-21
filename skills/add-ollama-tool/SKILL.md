@@ -97,6 +97,8 @@ By default, the MCP server connects to `http://host.docker.internal:11434` (Dock
 OLLAMA_HOST=http://your-ollama-host:11434
 ```
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 ### Restart the service
 
 ```bash

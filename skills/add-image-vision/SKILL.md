@@ -73,6 +73,8 @@ All tests must pass and build must be clean before proceeding.
    done
    ```
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 3. Restart the service:
    ```bash
    launchctl kickstart -k gui/$(id -u)/com.motherclaw

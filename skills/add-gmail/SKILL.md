@@ -139,6 +139,8 @@ Rebuild the container (agent-runner changed):
 cd container && ./build.sh
 ```
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 Then compile and restart:
 
 ```bash

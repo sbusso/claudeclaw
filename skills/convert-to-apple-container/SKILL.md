@@ -132,6 +132,8 @@ cat /tmp/test-rw/new.txt && rm -rf /tmp/test-rw
 
 Expected: Both operations succeed.
 
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 ### Full integration test
 
 ```bash

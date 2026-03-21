@@ -21,6 +21,8 @@ If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, 
 
 1. AskUserQuestion: "To customize MotherClaw fully, you need your own fork. First, fork sbusso/motherclaw on GitHub. What's your GitHub username?"
 2. AskUserQuestion: "Where should I clone the repo?" (default: `~/Code/motherclaw`)
+> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+
 3. Stop running service:
    - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.<instance>.plist`
    - Linux: `systemctl --user stop motherclaw-<instance>`
