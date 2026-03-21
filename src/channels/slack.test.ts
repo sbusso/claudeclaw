@@ -3,16 +3,16 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // --- Mocks ---
 
 // Mock registry (registerChannel runs at import time)
-vi.mock('./registry.js', () => ({ registerChannel: vi.fn() }));
+vi.mock('../orchestrator/channel-registry.js', () => ({ registerChannel: vi.fn() }));
 
 // Mock config
-vi.mock('../config.js', () => ({
+vi.mock('../orchestrator/config.js', () => ({
   ASSISTANT_NAME: 'Jonesy',
   TRIGGER_PATTERN: /^@Jonesy\b/i,
 }));
 
 // Mock logger
-vi.mock('../logger.js', () => ({
+vi.mock('../orchestrator/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('../logger.js', () => ({
 }));
 
 // Mock db
-vi.mock('../db.js', () => ({
+vi.mock('../orchestrator/db.js', () => ({
   updateChatName: vi.fn(),
 }));
 
@@ -77,7 +77,7 @@ vi.mock('@slack/bolt', () => ({
 }));
 
 // Mock env
-vi.mock('../env.js', () => ({
+vi.mock('../orchestrator/env.js', () => ({
   readEnvFile: vi.fn().mockReturnValue({
     SLACK_BOT_TOKEN: 'xoxb-test-token',
     SLACK_APP_TOKEN: 'xapp-test-token',
