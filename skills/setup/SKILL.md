@@ -13,28 +13,35 @@ Run setup steps automatically. Only pause when user action is required (channel 
 
 ## Mode Detection
 
-Before any steps, detect the execution mode:
+Before any steps, detect the execution mode.
 
-Run:
-- `echo $CLAUDE_PLUGIN_DATA`
+The plugin data directory is: `${CLAUDE_PLUGIN_DATA}`
+The plugin root directory is: `${CLAUDE_PLUGIN_ROOT}`
 
-**If CLAUDE_PLUGIN_DATA is set → Plugin mode:**
+Check if the plugin data path is populated (Claude Code substitutes `${CLAUDE_PLUGIN_DATA}` with the actual path for plugins). Run:
+```bash
+ls -d "${CLAUDE_PLUGIN_DATA}" 2>/dev/null && echo "PLUGIN_MODE" || echo "DEVELOPER_MODE"
+```
+
+**If PLUGIN_MODE → Plugin mode:**
 - Skip step 0 (Git & Fork) entirely
+- The plugin code is at `${CLAUDE_PLUGIN_ROOT}`
 
 Instance detection:
-- If `$CLAUDE_PLUGIN_DATA/instances.json` exists → read default instance, set `MOTHERCLAW_INSTANCE`
-- If `$CLAUDE_PLUGIN_DATA/instances.json` does NOT exist:
-  - If legacy state exists (store/, .env in CLAUDE_PLUGIN_DATA root) → migration is automatic (handled by service startup)
+- If `${CLAUDE_PLUGIN_DATA}/instances.json` exists → read default instance, set `MOTHERCLAW_INSTANCE`
+- If `${CLAUDE_PLUGIN_DATA}/instances.json` does NOT exist:
+  - If legacy state exists (store/, .env in `${CLAUDE_PLUGIN_DATA}` root) → migration is automatic (handled by service startup)
   - If no state at all → AskUserQuestion: "Create your first MotherClaw instance. What should it be called?" (default: "default")
-    - Create `$CLAUDE_PLUGIN_DATA/instances/<name>/` and `instances.json`
+    - Create `${CLAUDE_PLUGIN_DATA}/instances/<name>/` and `instances.json`
     - Set `MOTHERCLAW_INSTANCE` to the new name
 
 Print: "Running as MotherClaw plugin, instance: $MOTHERCLAW_INSTANCE"
-Ensure instance directories exist: `mkdir -p $CLAUDE_PLUGIN_DATA/instances/$MOTHERCLAW_INSTANCE/{store,groups,logs}`
-All subsequent steps use the instance directory for state paths
+Ensure instance directories exist: `mkdir -p ${CLAUDE_PLUGIN_DATA}/instances/$MOTHERCLAW_INSTANCE/{store,groups,logs}`
+All subsequent steps use the instance directory for state paths. The plugin code (dist/service.js, agent/runner) is at `${CLAUDE_PLUGIN_ROOT}`.
 
-**If CLAUDE_PLUGIN_DATA is not set → Developer mode:**
+**If DEVELOPER_MODE → Developer mode:**
 - Proceed with all steps unchanged
+- State lives in the current working directory
 
 ## 0. Git & Fork Setup (Developer mode only)
 
