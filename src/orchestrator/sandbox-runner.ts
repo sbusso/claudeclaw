@@ -286,6 +286,7 @@ export function buildSandboxSettings(mounts: SandboxMount[]): SandboxSettings {
       denyWrite.push(mount.hostPath);
     } else if (mount.readonly) {
       allowRead.push(mount.hostPath);
+      denyWrite.push(mount.hostPath); // enforce read-only at srt level
     } else {
       // read-write
       allowWrite.push(mount.hostPath);
@@ -435,6 +436,28 @@ export async function runSandboxAgent(
     child.stdin!.write(JSON.stringify(input));
     child.stdin!.end();
 
+    // Timeout handling — declared before event handlers so closures can reference them
+    const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
+    const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
+
+    const killOnTimeout = () => {
+      timedOut = true;
+      logger.error(
+        { group: group.name, processName },
+        'Sandbox timeout, killing',
+      );
+      child.kill('SIGTERM');
+      setTimeout(() => {
+        if (!child.killed) child.kill('SIGKILL');
+      }, 5000);
+    };
+
+    let timeout = setTimeout(killOnTimeout, timeoutMs);
+    const resetTimeout = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(killOnTimeout, timeoutMs);
+    };
+
     // Streaming output parsing
     let parseBuffer = '';
     let outputChain = Promise.resolve();
@@ -508,28 +531,6 @@ export async function runSandboxAgent(
         stderr += chunk;
       }
     });
-
-    // Timeout handling
-    const configTimeout = group.containerConfig?.timeout || CONTAINER_TIMEOUT;
-    const timeoutMs = Math.max(configTimeout, IDLE_TIMEOUT + 30_000);
-
-    const killOnTimeout = () => {
-      timedOut = true;
-      logger.error(
-        { group: group.name, processName },
-        'Sandbox timeout, killing',
-      );
-      child.kill('SIGTERM');
-      setTimeout(() => {
-        if (!child.killed) child.kill('SIGKILL');
-      }, 5000);
-    };
-
-    let timeout = setTimeout(killOnTimeout, timeoutMs);
-    const resetTimeout = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(killOnTimeout, timeoutMs);
-    };
 
     child.on('close', (code) => {
       clearTimeout(timeout);

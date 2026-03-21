@@ -66,7 +66,7 @@ describe('ensureSandboxRuntimeAvailable', () => {
 });
 
 describe('buildSandboxSettings', () => {
-  it('puts readonly mounts in allowRead', () => {
+  it('puts readonly mounts in allowRead and denyWrite', () => {
     const settings = buildSandboxSettings([
       {
         hostPath: '/host/project',
@@ -76,6 +76,7 @@ describe('buildSandboxSettings', () => {
     ]);
     expect(settings.filesystem.allowRead).toContain('/host/project');
     expect(settings.filesystem.allowWrite).not.toContain('/host/project');
+    expect(settings.filesystem.denyWrite).toContain('/host/project');
   });
 
   it('puts writable mounts in allowWrite', () => {

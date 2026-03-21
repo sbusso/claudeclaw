@@ -399,7 +399,7 @@ async function runAgent(
     if (output.status === 'error') {
       logger.error(
         { group: group.name, error: output.error },
-        'Container agent error',
+        `${runtime === 'sandbox' ? 'Sandbox' : 'Container'} agent error`,
       );
       return 'error';
     }
@@ -536,20 +536,22 @@ function ensureContainerSystemRunning(): void {
 }
 
 export async function main(): Promise<void> {
+  // Database must be initialized BEFORE querying registered groups
+  initDatabase(getExtensionDbSchema());
+  logger.info('Database initialized');
+
   // Runtime-dependent initialization
+  const allGroups = Object.values(getAllRegisteredGroups());
   const needsContainers =
     DEFAULT_RUNTIME === 'container' ||
-    Object.values(getAllRegisteredGroups()).some(
+    allGroups.some(
       (g) => (g.runtime || DEFAULT_RUNTIME) === 'container',
     );
   const needsSandbox =
     DEFAULT_RUNTIME === 'sandbox' ||
-    Object.values(getAllRegisteredGroups()).some(
-      (g) => g.runtime === 'sandbox',
+    allGroups.some(
+      (g) => (g.runtime || DEFAULT_RUNTIME) === 'sandbox',
     );
-
-  initDatabase(getExtensionDbSchema());
-  logger.info('Database initialized');
 
   if (needsContainers) {
     ensureContainerSystemRunning();
@@ -564,11 +566,7 @@ export async function main(): Promise<void> {
 
   // Start credential proxy only if container runtime is active
   // (sandbox mode passes credentials directly — no proxy needed)
-  let proxyServer: ReturnType<typeof startCredentialProxy> extends Promise<
-    infer T
-  >
-    ? T
-    : never;
+  let proxyServer: Awaited<ReturnType<typeof startCredentialProxy>> | undefined;
   if (needsContainers) {
     proxyServer = await startCredentialProxy(
       CREDENTIAL_PROXY_PORT,

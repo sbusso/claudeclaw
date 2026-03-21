@@ -11,7 +11,8 @@ import fs from 'fs';
 import path from 'path';
 import { CronExpressionParser } from 'cron-parser';
 
-const IPC_DIR = '/workspace/ipc';
+// Runtime-agnostic: sandbox sets MOTHERCLAW_IPC_DIR, container uses /workspace/ipc
+const IPC_DIR = process.env.MOTHERCLAW_IPC_DIR || '/workspace/ipc';
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
 const TASKS_DIR = path.join(IPC_DIR, 'tasks');
 
