@@ -7,6 +7,32 @@ description: Add new capabilities or modify MotherClaw behavior. Use when user w
 
 This skill helps users add capabilities or modify behavior. Use AskUserQuestion to understand what they want before making changes.
 
+## Plugin Mode Detection
+
+Run: `echo $CLAUDE_PLUGIN_DATA`
+
+If set (plugin mode), offer the user a choice via AskUserQuestion:
+- **Fork to developer mode (Recommended)** — Clone the repo, migrate state, full self-improvement and customization
+- **Continue in plugin mode** — Limited to channel setup and config changes (no code editing)
+
+If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, proceed with the normal workflow (limited to invoking existing skills like `/add-slack`, `/add-telegram`).
+
+### Migration: Plugin → Developer Mode
+
+1. AskUserQuestion: "To customize MotherClaw fully, you need your own fork. First, fork sbusso/motherclaw on GitHub. What's your GitHub username?"
+2. AskUserQuestion: "Where should I clone the repo?" (default: `~/Code/motherclaw`)
+3. Stop running service:
+   - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist`
+   - Linux: `systemctl --user stop motherclaw`
+4. Clone: `git clone https://github.com/<username>/motherclaw.git <clone-path>`
+5. Copy state: `cp -r $CLAUDE_PLUGIN_DATA/{store,groups,.env} <clone-path>/`
+6. AskUserQuestion: "Copy logs too?" If yes: `cp -r $CLAUDE_PLUGIN_DATA/logs <clone-path>/`
+7. Clear stale sessions: `sqlite3 <clone-path>/store/messages.db "DELETE FROM sessions"`
+8. Install and build: `cd <clone-path> && npm install && npm run build`
+9. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/motherclaw.git`
+10. Run service setup: `cd <clone-path> && npx tsx setup/index.ts --step service`
+11. Print: "Migration complete! Run `cd <clone-path> && claude` to use developer mode. Remove `--plugin-dir` from your Claude Code invocation."
+
 ## Workflow
 
 1. **Understand the request** - Ask clarifying questions
