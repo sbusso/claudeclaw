@@ -315,6 +315,41 @@ cat data/ipc/{groupFolder}/current_tasks.json
 - `current_tasks.json` - Host writes: read-only snapshot of scheduled tasks
 - `available_groups.json` - Host writes: read-only list of WhatsApp groups (main only)
 
+## Sandbox Runtime Debugging
+
+If `RUNTIME=sandbox` is set, agents run via `@anthropic-ai/sandbox-runtime` instead of containers.
+
+### Sandbox Architecture
+
+```
+Host (macOS/Linux)
+───────────────────────────────────────────
+src/orchestrator/sandbox-runner.ts
+    │
+    │ spawns sandboxed process via srt CLI
+    │ with kernel-enforced filesystem/network
+    │
+    ├── MOTHERCLAW_GROUP_DIR → groups/{folder}
+    ├── MOTHERCLAW_IPC_DIR → data/ipc/{folder}
+    ├── MOTHERCLAW_PROJECT_DIR → project root (read-only)
+    ├── MOTHERCLAW_GLOBAL_DIR → groups/global (read-only)
+    └── MOTHERCLAW_EXTRA_DIR → additional mounts
+```
+
+### Sandbox-Specific Issues
+
+**EPERM on all operations:** The srt settings JSON file requires ALL fields including empty arrays (`allowRead: []`). Omit any field and the entire settings file silently fails validation — zero error messages.
+
+**Agent runner won't start (tsx/EPERM):** Sandbox blocks Unix sockets needed by `tsx`. Fix: pre-compile with `cd container/agent-runner && npx tsc`, run with plain `node`.
+
+**Agent can't find paths:** Check that `MOTHERCLAW_*_DIR` env vars are set in `sandbox-runner.ts`. The agent runner falls back to `/workspace/*` if env vars are missing.
+
+**Stale sessions after runtime switch:** Switching a group between container and sandbox leaves stale session IDs. Fix: `sqlite3 store/messages.db "DELETE FROM sessions"`
+
+**Network blocked:** Verify `allowedDomains` in the generated settings file includes `api.anthropic.com`. Check `data/sandbox-settings/` for the last generated settings file.
+
+**Credential issues:** Sandbox passes real credentials via env vars (not through the credential proxy). Ensure `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` is in `.env`.
+
 ## Quick Diagnostic Script
 
 Run this to check common issues:

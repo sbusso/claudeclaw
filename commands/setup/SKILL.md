@@ -76,8 +76,21 @@ Run `npx tsx setup/index.ts --step environment` and parse the status block.
 
 Check the preflight results for `APPLE_CONTAINER` and `DOCKER`, and the PLATFORM from step 1.
 
-- PLATFORM=linux → Docker (only option)
-- PLATFORM=macos + APPLE_CONTAINER=installed → Use `AskUserQuestion: Docker (cross-platform) or Apple Container (native macOS)?` If Apple Container, run `/convert-to-apple-container` now, then skip to 3c.
+Use `AskUserQuestion` with options:
+- **Sandbox (Recommended)** — OS-level sandboxing via `@anthropic-ai/sandbox-runtime`. <10ms cold starts, no container daemon needed, kernel-enforced isolation. macOS/Linux only.
+- **Apple Container** — Native macOS container (if APPLE_CONTAINER=installed)
+- **Docker** — Cross-platform container runtime
+
+If **Sandbox** chosen:
+- Run `npm install @anthropic-ai/sandbox-runtime` if not already installed
+- Set `RUNTIME=sandbox` in `.env`
+- Pre-compile agent runner: `cd container/agent-runner && npx tsc`
+- Skip container build (3b, 3c) — go directly to step 4
+
+If **Apple Container** or **Docker** chosen, continue with the container setup below:
+
+- PLATFORM=linux → Docker (only option among container runtimes)
+- PLATFORM=macos + APPLE_CONTAINER=installed → Apple Container or Docker
 - PLATFORM=macos + APPLE_CONTAINER=not_found → Docker
 
 ### 3a-docker. Install Docker
