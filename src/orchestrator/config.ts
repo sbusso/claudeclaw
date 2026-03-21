@@ -1,3 +1,4 @@
+import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
@@ -38,10 +39,26 @@ export const SENDER_ALLOWLIST_PATH = path.join(
   'sender-allowlist.json',
 );
 // Use CLAUDE_PLUGIN_DATA for persistent state if available (v2.1.78+),
-// falls back to project-local directories
-export const STATE_ROOT = process.env.CLAUDE_PLUGIN_DATA
-  ? path.resolve(process.env.CLAUDE_PLUGIN_DATA)
-  : PROJECT_ROOT;
+// falls back to project-local directories.
+// In plugin mode, each instance gets its own subdirectory under instances/<name>.
+function readDefaultInstance(pluginData: string): string {
+  const configPath = path.join(pluginData, 'instances.json');
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return config.default || 'default';
+  } catch {
+    return 'default';
+  }
+}
+
+function resolveStateRoot(): string {
+  const pluginData = process.env.CLAUDE_PLUGIN_DATA;
+  if (!pluginData) return process.cwd();
+  const instance = process.env.MOTHERCLAW_INSTANCE || readDefaultInstance(pluginData);
+  return path.resolve(pluginData, 'instances', instance);
+}
+
+export const STATE_ROOT = resolveStateRoot();
 
 export const STORE_DIR = path.resolve(STATE_ROOT, 'store');
 export const GROUPS_DIR = path.resolve(STATE_ROOT, 'groups');
