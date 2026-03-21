@@ -1,18 +1,22 @@
 # MotherClaw
 
-Persistent agent orchestrator plugin for Claude Code. Multi-channel message routing, triage, and SWE task management — with OS-level sandbox isolation.
+Persistent agent orchestrator plugin for Claude Code. Multi-channel message routing, structured memory, webhook triggers, cost tracking — with OS-level sandbox isolation.
 
 Built on [NanoClaw](https://github.com/qwibitai/nanoclaw) — ported to a Claude Code plugin architecture with a pluggable extension system and Anthropic's sandbox runtime.
 
 ## What It Does
 
-MotherClaw is a Claude Code plugin that provides an always-on message loop. It listens to channels (Slack, WhatsApp, Telegram), routes messages to Claude agents running in isolated sandboxes, and manages ongoing conversations.
+MotherClaw is a Claude Code plugin that provides an always-on message loop. It listens to channels (Slack, WhatsApp, Telegram), routes messages to Claude agents running in isolated sandboxes, and manages ongoing conversations with structured memory.
 
 ### Core (Orchestrator)
 - **Always-on message loop** — persistent listener, not one-shot
 - **Multi-channel routing** — Slack, WhatsApp, Telegram (pluggable)
 - **Thread management** — auto-create threads, follow-ups without re-mentioning
 - **Context accumulation** — messages batch between triggers
+- **Structured memory** — daily logs, topic files, searchable archive with QMD upgrade path
+- **Webhook triggers** — HTTP POST with HMAC-SHA256 auth for CI/CD, GitHub, monitoring
+- **Per-group agent config** — model, tools, system prompt, cost limits per group
+- **Cost tracking** — token usage and estimated cost per agent run
 - **Extension system** — plug in triage, SWE queue, or custom capabilities
 - **Dual runtime** — OS-level sandbox (default) or container isolation
 
@@ -71,6 +75,85 @@ RUNTIME=container
 
 Per-group override: set `"runtime": "sandbox"` in the registered group config to use sandbox for specific groups while others use containers.
 
+## Agent Triggers
+
+MotherClaw agents can be triggered three ways:
+
+| Trigger | How | Use Case |
+|---------|-----|----------|
+| **Channel message** | @mention in Slack/WhatsApp/Telegram | Interactive conversations |
+| **Scheduled task** | Cron, interval, or one-shot | Daily briefings, monitoring, reminders |
+| **Webhook** | `POST /webhook/:group` with HMAC-SHA256 | CI/CD pipelines, GitHub events, monitoring alerts |
+
+### Webhook Triggers
+
+External systems can trigger agent runs via HTTP POST. Requires `WEBHOOK_SECRET` in `.env`.
+
+```bash
+# Trigger an agent run
+PAYLOAD='{"prompt":"CI build failed on main — investigate and summarize"}'
+SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')
+curl -X POST http://localhost:3100/webhook/dev-team \
+  -H "X-Signature: $SIGNATURE" \
+  -d "$PAYLOAD"
+```
+
+- HMAC-SHA256 signature verification (timing-safe)
+- Per-group rate limiting (10 req/min)
+- Health check: `GET /health`
+- Response routes through the group's channel
+
+## Memory System
+
+Agents have structured memory tools for persistent recall across conversations:
+
+| Tool | What it does |
+|------|-------------|
+| **`memory_save`** | Append facts/notes to daily logs, topic files, or long-term CLAUDE.md |
+| **`memory_search`** | Search across all memory files and archived conversations |
+| **`memory_get`** | Read a specific memory file by path |
+
+```
+groups/{folder}/
+  CLAUDE.md              # Long-term memory (loaded every session)
+  memory/
+    YYYY-MM-DD.md        # Daily append-only logs
+    topics/{name}.md     # Topic-specific memory (projects, people, domains)
+  conversations/         # Archived transcripts (auto-saved before compaction)
+```
+
+Before context compaction, the PreCompact hook automatically archives the conversation and writes a summary to the daily memory log — ensuring key context survives.
+
+**QMD upgrade:** Run `/add-qmd` to replace grep-based search with [QMD](https://github.com/tobi/qmd)'s hybrid BM25 + vector semantic search + LLM re-ranking, fully local.
+
+## Per-Group Agent Config
+
+Each group can customize its agent behavior:
+
+```typescript
+agentConfig: {
+  model: 'haiku',                    // sonnet | opus | haiku | full model ID
+  systemPrompt: 'You are a ...',     // Appended to agent system context
+  allowedTools: ['Bash', 'Read'],    // Override default tool allowlist
+  maxTurns: 10,                      // Limit conversation turns
+  costLimitUsd: 0.50,                // Per-run budget cap
+}
+```
+
+## Cost Tracking
+
+Every agent run is logged with token usage and estimated cost:
+
+```bash
+# Total cost per group
+sqlite3 store/messages.db \
+  "SELECT group_folder, SUM(estimated_cost_usd) as cost, COUNT(*) as runs FROM agent_runs GROUP BY group_folder"
+
+# Recent runs with details
+sqlite3 store/messages.db \
+  "SELECT group_folder, trigger_type, model, input_tokens+output_tokens as tokens, estimated_cost_usd, duration_ms FROM agent_runs ORDER BY run_at DESC LIMIT 10"
+```
+
 ## As a Claude Code Plugin
 
 ```bash
@@ -96,9 +179,13 @@ claude --plugin-dir ./motherclaw
 - **Multi-channel messaging** — Slack, WhatsApp, Telegram, Discord, Gmail. Add channels with skills like `/add-whatsapp` or `/add-telegram`.
 - **Isolated group context** — Each group has its own `CLAUDE.md` memory, isolated filesystem, and sandbox/container with only that directory mounted.
 - **Main channel** — Your private channel for admin control; every other group is completely isolated.
+- **Structured memory** — Daily logs, topic files, long-term CLAUDE.md, searchable archive.
 - **Scheduled tasks** — Recurring jobs that run Claude and can message you back.
+- **Webhook triggers** — External systems invoke agents via authenticated HTTP POST.
 - **Web access** — Search and fetch content from the Web.
 - **Agent Swarms** — Spin up teams of specialized agents that collaborate on complex tasks.
+- **Per-group agent config** — Model, tools, system prompt, cost limits per group.
+- **Cost tracking** — Token usage and estimated cost logged per run.
 - **Extension system** — Plug in triage, SWE queue, or custom capabilities without modifying core.
 
 ## Usage
@@ -122,6 +209,8 @@ From the main channel, manage groups and tasks:
 
 ```
 Channels → SQLite → Polling loop → Sandbox/Container (Claude Agent SDK) → Response
+                                         ↑
+Webhooks → HTTP server → HMAC verify → Queue
 ```
 
 Single Node.js process. Channels self-register at startup — the orchestrator connects whichever ones have credentials in `.env`. Messages land in SQLite, a polling loop picks them up, and the runtime spawns an isolated agent per group. IPC via filesystem.
@@ -143,18 +232,25 @@ src/
     db.ts                          # SQLite operations
     group-queue.ts                 # Concurrency control
     ipc.ts                         # File-based IPC watcher
-    types.ts                       # Core types
+    types.ts                       # Core types (AgentConfig, RegisteredGroup, etc.)
   channels/
     slack.ts                       # Slack (Socket Mode, thread JIDs, reaction typing)
+  webhook/
+    server.ts                      # HTTP server with HMAC-SHA256 auth
+    index.ts                       # Webhook extension registration
+  cost-tracking/
+    index.ts                       # Cost tracking extension (agent_runs table)
   triage/
     index.ts                       # Triage extension registration
 agent/
   runner/src/index.ts              # Runs inside sandbox/container — Claude Agent SDK
+  runner/src/ipc-mcp-stdio.ts      # MCP server (memory, tasks, messaging tools)
   skills/                          # Skills available to agents
 docker/
   Dockerfile                       # Container image definition
   build.sh                         # Container build script
 groups/*/CLAUDE.md                 # Per-group memory (isolated)
+groups/*/memory/                   # Daily logs and topic files
 ```
 
 ### Sandbox Runtime Internals
@@ -195,6 +291,8 @@ registerExtension({
 });
 ```
 
+Built-in extensions: **webhook triggers**, **cost tracking**, **triage + SWE queue**.
+
 ## Customizing
 
 MotherClaw doesn't use configuration files. To make changes, just tell Claude Code what you want:
@@ -202,6 +300,7 @@ MotherClaw doesn't use configuration files. To make changes, just tell Claude Co
 - "Change the trigger word to @Bob"
 - "Add a morning briefing that runs at 7am and posts to Slack"
 - "Give the family group access to my Obsidian vault"
+- "Use opus for the dev-team group and haiku for everything else"
 
 Or run `/customize` for guided changes. Each change is a code change, committed to your fork, reversible with `git revert`.
 
@@ -239,7 +338,7 @@ Ask Claude Code. "Why isn't the scheduler running?" "What's in the recent logs?"
 ```bash
 npm run build    # Compile TypeScript
 npm run dev      # Run with tsx
-npm test         # Run tests (377 tests)
+npm test         # Run tests (386 tests)
 ```
 
 ## License
