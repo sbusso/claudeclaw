@@ -278,3 +278,206 @@ echo $! > ${JSON.stringify(pidFile)}`;
     expect(wrapper).toContain('motherclaw.pid');
   });
 });
+
+// --- Instance-named service helpers ---
+
+// Helper: generate instance-named plist (mirrors service.ts logic)
+function generateInstancePlist(
+  nodePath: string,
+  projectRoot: string,
+  homeDir: string,
+  pluginDataDir: string,
+  instanceName: string,
+): string {
+  const serviceLabel = `com.motherclaw.${instanceName}`;
+  const logDir = `${pluginDataDir}/instances/${instanceName}/logs`;
+  const envFilePath = `${pluginDataDir}/instances/${instanceName}/.env`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>${serviceLabel}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${nodePath}</string>
+        <string>${projectRoot}/dist/service.js</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>${projectRoot}</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
+        <key>HOME</key>
+        <string>${homeDir}</string>
+        <key>CLAUDE_PLUGIN_DATA</key>
+        <string>${pluginDataDir}</string>
+        <key>MOTHERCLAW_ENV_FILE</key>
+        <string>${envFilePath}</string>
+        <key>MOTHERCLAW_INSTANCE</key>
+        <string>${instanceName}</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>${logDir}/motherclaw.log</string>
+    <key>StandardErrorPath</key>
+    <string>${logDir}/motherclaw.error.log</string>
+</dict>
+</plist>`;
+}
+
+// Helper: generate instance-named systemd unit
+function generateInstanceSystemdUnit(
+  nodePath: string,
+  projectRoot: string,
+  homeDir: string,
+  pluginDataDir: string,
+  instanceName: string,
+  isSystem: boolean,
+): string {
+  const logDir = `${pluginDataDir}/instances/${instanceName}/logs`;
+  const envFilePath = `${pluginDataDir}/instances/${instanceName}/.env`;
+  return `[Unit]
+Description=MotherClaw Personal Assistant (${instanceName})
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=${nodePath} ${projectRoot}/dist/service.js
+WorkingDirectory=${projectRoot}
+Restart=always
+RestartSec=5
+Environment=HOME=${homeDir}
+Environment=PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin
+Environment=CLAUDE_PLUGIN_DATA=${pluginDataDir}
+Environment=MOTHERCLAW_ENV_FILE=${envFilePath}
+Environment=MOTHERCLAW_INSTANCE=${instanceName}
+StandardOutput=append:${logDir}/motherclaw.log
+StandardError=append:${logDir}/motherclaw.error.log
+
+[Install]
+WantedBy=${isSystem ? 'multi-user.target' : 'default.target'}`;
+}
+
+describe('instance-named plist generation', () => {
+  const pluginDataDir = '/Users/testuser/.claude/plugins/motherclaw';
+  const instanceName = 'acme-corp';
+
+  it('plist label includes instance name', () => {
+    const plist = generateInstancePlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+    );
+    expect(plist).toContain(`<string>com.motherclaw.${instanceName}</string>`);
+    // Must NOT contain bare com.motherclaw label
+    expect(plist).not.toMatch(/<string>com\.motherclaw<\/string>/);
+  });
+
+  it('includes MOTHERCLAW_INSTANCE env var', () => {
+    const plist = generateInstancePlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+    );
+    expect(plist).toContain('<key>MOTHERCLAW_INSTANCE</key>');
+    expect(plist).toContain(`<string>${instanceName}</string>`);
+  });
+
+  it('MOTHERCLAW_ENV_FILE points to instance-specific .env', () => {
+    const plist = generateInstancePlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+    );
+    expect(plist).toContain('<key>MOTHERCLAW_ENV_FILE</key>');
+    expect(plist).toContain(
+      `<string>${pluginDataDir}/instances/${instanceName}/.env</string>`,
+    );
+    // Must NOT contain the non-instance path
+    expect(plist).not.toContain(`<string>${pluginDataDir}/.env</string>`);
+  });
+
+  it('log paths under instance directory', () => {
+    const plist = generateInstancePlist(
+      '/usr/local/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+    );
+    expect(plist).toContain(
+      `${pluginDataDir}/instances/${instanceName}/logs/motherclaw.log`,
+    );
+    expect(plist).toContain(
+      `${pluginDataDir}/instances/${instanceName}/logs/motherclaw.error.log`,
+    );
+  });
+});
+
+describe('instance-named systemd unit generation', () => {
+  const pluginDataDir = '/Users/testuser/.claude/plugins/motherclaw';
+  const instanceName = 'acme-corp';
+
+  it('description includes instance name', () => {
+    const unit = generateInstanceSystemdUnit(
+      '/usr/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+      false,
+    );
+    expect(unit).toContain(`Description=MotherClaw Personal Assistant (${instanceName})`);
+  });
+
+  it('includes MOTHERCLAW_INSTANCE env var', () => {
+    const unit = generateInstanceSystemdUnit(
+      '/usr/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+      false,
+    );
+    expect(unit).toContain(`Environment=MOTHERCLAW_INSTANCE=${instanceName}`);
+  });
+
+  it('MOTHERCLAW_ENV_FILE points to instance-specific .env', () => {
+    const unit = generateInstanceSystemdUnit(
+      '/usr/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+      false,
+    );
+    expect(unit).toContain(
+      `Environment=MOTHERCLAW_ENV_FILE=${pluginDataDir}/instances/${instanceName}/.env`,
+    );
+  });
+
+  it('log paths under instance directory', () => {
+    const unit = generateInstanceSystemdUnit(
+      '/usr/bin/node',
+      '/home/user/motherclaw',
+      '/home/user',
+      pluginDataDir,
+      instanceName,
+      false,
+    );
+    expect(unit).toContain(
+      `${pluginDataDir}/instances/${instanceName}/logs/motherclaw.log`,
+    );
+  });
+});
