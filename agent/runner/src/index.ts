@@ -519,9 +519,14 @@ async function runQuery(
     ? agentCfg.allowedTools
     : defaultAllowedTools;
 
+  // Ensure memory directory exists for auto-memory + our memory tools
+  const memoryDir = path.join(WORKSPACE_GROUP, 'memory');
+  fs.mkdirSync(memoryDir, { recursive: true });
+
   // Build query options
   const queryOptions: Record<string, any> = {
     cwd: WORKSPACE_GROUP,
+    autoMemoryDirectory: memoryDir, // v2.1.80+ — unifies SDK auto-memory with our memory_save/memory_search
     additionalDirectories: extraDirs.length > 0 ? extraDirs : undefined,
     resume: sessionId,
     resumeSessionAt: resumeAt,
