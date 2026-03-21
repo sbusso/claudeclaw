@@ -4,6 +4,7 @@ import path from 'path';
 import {
   ASSISTANT_NAME,
   CREDENTIAL_PROXY_PORT,
+  DEFAULT_RUNTIME,
   IDLE_TIMEOUT,
   POLL_INTERVAL,
   GROUPS_DIR,
@@ -11,6 +12,11 @@ import {
   TRIGGER_PATTERN,
 } from './config.js';
 import { startCredentialProxy } from './credential-proxy.js';
+import {
+  cleanupSandboxOrphans,
+  ensureSandboxRuntimeAvailable,
+  runSandboxAgent,
+} from './sandbox-runner.js';
 // Channels loaded from src/index.ts;
 import {
   getChannelFactory,
@@ -363,20 +369,27 @@ async function runAgent(
     : undefined;
 
   try {
-    const output = await runContainerAgent(
-      group,
-      {
-        prompt,
-        sessionId,
-        groupFolder: group.folder,
-        chatJid,
-        isMain,
-        assistantName: ASSISTANT_NAME,
-      },
-      (proc, containerName) =>
-        queue.registerProcess(chatJid, proc, containerName, group.folder),
-      wrappedOnOutput,
-    );
+    const runtime = group.runtime || DEFAULT_RUNTIME;
+    const agentInput = {
+      prompt,
+      sessionId,
+      groupFolder: group.folder,
+      chatJid,
+      isMain,
+      assistantName: ASSISTANT_NAME,
+    };
+    const onProcessCb = (proc: any, name: string) =>
+      queue.registerProcess(chatJid, proc, name, group.folder);
+
+    const output =
+      runtime === 'sandbox'
+        ? await runSandboxAgent(group, agentInput, onProcessCb, wrappedOnOutput)
+        : await runContainerAgent(
+            group,
+            agentInput,
+            onProcessCb,
+            wrappedOnOutput,
+          );
 
     if (output.newSessionId) {
       sessions[group.folder] = output.newSessionId;
@@ -523,22 +536,50 @@ function ensureContainerSystemRunning(): void {
 }
 
 export async function main(): Promise<void> {
-  ensureContainerSystemRunning();
+  // Runtime-dependent initialization
+  const needsContainers =
+    DEFAULT_RUNTIME === 'container' ||
+    Object.values(getAllRegisteredGroups()).some(
+      (g) => (g.runtime || DEFAULT_RUNTIME) === 'container',
+    );
+  const needsSandbox =
+    DEFAULT_RUNTIME === 'sandbox' ||
+    Object.values(getAllRegisteredGroups()).some(
+      (g) => g.runtime === 'sandbox',
+    );
+
   initDatabase(getExtensionDbSchema());
   logger.info('Database initialized');
+
+  if (needsContainers) {
+    ensureContainerSystemRunning();
+  }
+  if (needsSandbox) {
+    ensureSandboxRuntimeAvailable();
+    cleanupSandboxOrphans();
+  }
+
   loadState();
   restoreRemoteControl();
 
-  // Start credential proxy (containers route API calls through this)
-  const proxyServer = await startCredentialProxy(
-    CREDENTIAL_PROXY_PORT,
-    PROXY_BIND_HOST,
-  );
+  // Start credential proxy only if container runtime is active
+  // (sandbox mode passes credentials directly — no proxy needed)
+  let proxyServer: ReturnType<typeof startCredentialProxy> extends Promise<
+    infer T
+  >
+    ? T
+    : never;
+  if (needsContainers) {
+    proxyServer = await startCredentialProxy(
+      CREDENTIAL_PROXY_PORT,
+      PROXY_BIND_HOST,
+    );
+  }
 
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
-    proxyServer.close();
+    proxyServer?.close();
     await queue.shutdown();
     for (const ch of channels) await ch.disconnect();
     process.exit(0);

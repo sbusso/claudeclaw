@@ -40,6 +40,7 @@ export interface RegisteredGroup {
   containerConfig?: ContainerConfig;
   requiresTrigger?: boolean; // Default: true for groups, false for solo chats
   isMain?: boolean; // True for the main control group (no trigger, elevated privileges)
+  runtime?: 'container' | 'sandbox'; // Per-group runtime override (falls back to DEFAULT_RUNTIME)
 }
 
 export interface NewMessage {
