@@ -1,0 +1,13 @@
+{
+  "name": "motherclaw",
+  "description": "Persistent agent orchestrator for Claude Code. Multi-channel message routing, triage, and SWE task management.",
+  "version": "0.1.0",
+  "author": {
+    "name": "GreenTomato"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gtm-innovation/motherclaw"
+  },
+  "license": "MIT"
+}
