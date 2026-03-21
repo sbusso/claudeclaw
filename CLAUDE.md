@@ -2,11 +2,21 @@
 
 Persistent agent orchestrator plugin for Claude Code.
 
+## Entry Points
+
+Two separate entry points — plugin and service must not be conflated:
+
+- **`src/index.ts`** → `dist/index.js` — **Plugin entry.** Loaded by Claude Code via `--plugin-dir`. Returns immediately, no side effects. No channel/extension imports.
+- **`src/service.ts`** → `dist/service.js` — **Service entry.** Run by launchd/systemd as persistent background process. Imports channels/extensions, starts the message loop.
+
+The plugin entry is what `.claude-plugin/plugin.json` points to. The service entry is what `npm start`, `npm run dev`, and the launchd plist/systemd unit run.
+
 ## Architecture
 
 ```
 src/
-  index.ts                    # Entrypoint: DB → channels → extensions → message loop
+  index.ts                    # Plugin entry (Claude Code --plugin-dir, non-blocking)
+  service.ts                  # Service entry (launchd/systemd, runs message loop)
   orchestrator/               # Core
     message-loop.ts           # THE HEART: poll, trigger, thread, queue, dispatch
     group-queue.ts            # Concurrency control for agent execution

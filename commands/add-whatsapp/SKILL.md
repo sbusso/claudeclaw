@@ -323,7 +323,7 @@ rm -rf store/auth/ && npx tsx setup/index.ts --step whatsapp-auth -- --method qr
 This happens when two instances connect with the same credentials. Ensure only one MotherClaw process is running:
 
 ```bash
-pkill -f "node dist/index.js"
+pkill -f "node dist/service.js"
 # Then restart
 ```
 

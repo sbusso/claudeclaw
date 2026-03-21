@@ -90,7 +90,7 @@ function setupLaunchd(
     <key>ProgramArguments</key>
     <array>
         <string>${nodePath}</string>
-        <string>${projectRoot}/dist/index.js</string>
+        <string>${projectRoot}/dist/service.js</string>
     </array>
     <key>WorkingDirectory</key>
     <string>${projectRoot}</string>
@@ -165,7 +165,7 @@ function setupLinux(
  */
 function killOrphanedProcesses(projectRoot: string): void {
   try {
-    execSync(`pkill -f '${projectRoot}/dist/index\\.js' || true`, {
+    execSync(`pkill -f '${projectRoot}/dist/service\\.js' || true`, {
       stdio: 'ignore',
     });
     logger.info('Stopped any orphaned motherclaw processes');
@@ -239,7 +239,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=${nodePath} ${projectRoot}/dist/index.js
+ExecStart=${nodePath} ${projectRoot}/dist/service.js
 WorkingDirectory=${projectRoot}
 Restart=always
 RestartSec=5
@@ -335,7 +335,7 @@ function setupNohupFallback(
     'fi',
     '',
     'echo "Starting MotherClaw..."',
-    `nohup ${JSON.stringify(nodePath)} ${JSON.stringify(projectRoot + '/dist/index.js')} \\`,
+    `nohup ${JSON.stringify(nodePath)} ${JSON.stringify(projectRoot + '/dist/service.js')} \\`,
     `  >> ${JSON.stringify(projectRoot + '/logs/motherclaw.log')} \\`,
     `  2>> ${JSON.stringify(projectRoot + '/logs/motherclaw.error.log')} &`,
     '',

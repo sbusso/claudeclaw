@@ -668,7 +668,7 @@ When MotherClaw starts, it:
     <key>ProgramArguments</key>
     <array>
         <string>{{NODE_PATH}}</string>
-        <string>{{PROJECT_ROOT}}/dist/index.js</string>
+        <string>{{PROJECT_ROOT}}/dist/service.js</string>
     </array>
     <key>WorkingDirectory</key>
     <string>{{PROJECT_ROOT}}</string>
@@ -784,5 +784,5 @@ Run manually for verbose output:
 ```bash
 npm run dev
 # or
-node dist/index.js
+node dist/service.js
 ```
