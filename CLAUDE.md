@@ -33,6 +33,9 @@ src/
 - **Thread auto-creation**: @mention on trigger-required channel → reply in thread → register thread with requiresTrigger: false
 - **Extensions** register IPC handlers, startup hooks, DB schema, container env vars
 - **Channels** self-register via `registerChannel()` on import
+- **Webhook triggers** allow external systems to invoke agents via HTTP POST
+- **Per-group agent config** customizes model, tools, system prompt, cost limits per group
+- **Cost tracking** records token usage, estimated cost, duration per agent run
 
 ## Runtime Configuration
 
@@ -53,6 +56,50 @@ Per-group override: set `"runtime": "sandbox"` in the registered group config.
 **srt settings schema:** The `--settings <path>` JSON file requires ALL fields including `allowRead: []` even if empty. Omitting causes silent schema validation failure. Key fields: `network.allowedDomains`, `network.deniedDomains`, `network.allowLocalBinding`, `filesystem.denyRead`, `filesystem.allowRead`, `filesystem.allowWrite`, `filesystem.denyWrite`.
 
 **Config reading:** MotherClaw does NOT use `dotenv`. The `RUNTIME` value in `.env` is read via `readEnvFile()` in `config.ts`.
+
+## Per-Group Agent Config
+
+Groups can override agent behavior via `agentConfig` on `RegisteredGroup`:
+
+```typescript
+agentConfig: {
+  model: 'haiku',           // 'sonnet' | 'opus' | 'haiku' | full model ID
+  systemPrompt: '...',      // Appended to agent system context
+  allowedTools: ['Bash', 'Read'],  // Override default tool allowlist
+  maxTurns: 10,             // Limit conversation turns
+  costLimitUsd: 0.50,       // Per-run budget cap
+}
+```
+
+Stored as JSON in `registered_groups.agent_config` column. Passed through `ContainerInput` to the agent runner, which applies overrides to the SDK `query()` call.
+
+## Webhook Triggers
+
+External systems can trigger agent runs via HTTP POST. Requires `WEBHOOK_SECRET` in `.env`.
+
+```bash
+# Trigger an agent run for a group
+SIGNATURE=$(echo -n '{"prompt":"Check CI status"}' | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')
+curl -X POST http://localhost:3100/webhook/mygroup \
+  -H "X-Signature: $SIGNATURE" \
+  -d '{"prompt":"Check CI status"}'
+```
+
+- HMAC-SHA256 signature verification (timing-safe)
+- Per-group rate limiting (10 req/min)
+- Health check: `GET /health`
+- Response routes through the group's channel (Slack, Telegram, etc.)
+
+Config: `WEBHOOK_PORT` (default: 3100), `WEBHOOK_SECRET` (required to enable)
+
+## Cost Tracking
+
+Every agent run is logged to the `agent_runs` table with token usage and estimated cost:
+- `input_tokens`, `output_tokens`, `cache_creation_tokens`, `cache_read_tokens`
+- `estimated_cost_usd` (calculated from Anthropic pricing)
+- `duration_ms`, `turns`, `model`, `trigger_type` (message/scheduled/webhook)
+
+Query costs: `sqlite3 store/messages.db "SELECT group_folder, SUM(estimated_cost_usd) as total_cost, COUNT(*) as runs FROM agent_runs GROUP BY group_folder"`
 
 ## Development
 

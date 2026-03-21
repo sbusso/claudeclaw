@@ -19,6 +19,14 @@ import path from 'path';
 import { query, HookCallback, PreCompactHookInput } from '@anthropic-ai/claude-agent-sdk';
 import { fileURLToPath } from 'url';
 
+interface AgentConfig {
+  model?: string;
+  systemPrompt?: string;
+  allowedTools?: string[];
+  maxTurns?: number;
+  costLimitUsd?: number;
+}
+
 interface ContainerInput {
   prompt: string;
   sessionId?: string;
@@ -27,6 +35,7 @@ interface ContainerInput {
   isMain: boolean;
   isScheduledTask?: boolean;
   assistantName?: string;
+  agentConfig?: AgentConfig;
 }
 
 interface ContainerOutput {
@@ -34,6 +43,14 @@ interface ContainerOutput {
   result: string | null;
   newSessionId?: string;
   error?: string;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
+  };
+  durationMs?: number;
+  turns?: number;
 }
 
 interface SessionEntry {
@@ -345,7 +362,7 @@ async function runQuery(
   containerInput: ContainerInput,
   sdkEnv: Record<string, string | undefined>,
   resumeAt?: string,
-): Promise<{ newSessionId?: string; lastAssistantUuid?: string; closedDuringQuery: boolean }> {
+): Promise<{ newSessionId?: string; lastAssistantUuid?: string; closedDuringQuery: boolean; usage: ContainerOutput['usage']; turns: number }> {
   const stream = new MessageStream();
   stream.push(prompt);
 
@@ -375,11 +392,28 @@ async function runQuery(
   let messageCount = 0;
   let resultCount = 0;
 
+  // Usage tracking
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCacheCreation = 0;
+  let totalCacheRead = 0;
+  let turns = 0;
+
   // Load global CLAUDE.md as additional system context (shared across all groups)
   const globalClaudeMdPath = path.join(WORKSPACE_GLOBAL, 'CLAUDE.md');
   let globalClaudeMd: string | undefined;
   if (!containerInput.isMain && fs.existsSync(globalClaudeMdPath)) {
     globalClaudeMd = fs.readFileSync(globalClaudeMdPath, 'utf-8');
+  }
+
+  // Apply per-group agent config overrides
+  const agentCfg = containerInput.agentConfig;
+
+  // If agentConfig has a systemPrompt, append it to globalClaudeMd
+  if (agentCfg?.systemPrompt) {
+    globalClaudeMd = globalClaudeMd
+      ? `${globalClaudeMd}\n\n${agentCfg.systemPrompt}`
+      : agentCfg.systemPrompt;
   }
 
   // Discover additional directories mounted at /workspace/extra/*
@@ -398,45 +432,64 @@ async function runQuery(
     log(`Additional directories: ${extraDirs.join(', ')}`);
   }
 
-  for await (const message of query({
-    prompt: stream,
-    options: {
-      cwd: WORKSPACE_GROUP,
-      additionalDirectories: extraDirs.length > 0 ? extraDirs : undefined,
-      resume: sessionId,
-      resumeSessionAt: resumeAt,
-      systemPrompt: globalClaudeMd
-        ? { type: 'preset' as const, preset: 'claude_code' as const, append: globalClaudeMd }
-        : undefined,
-      allowedTools: [
-        'Bash',
-        'Read', 'Write', 'Edit', 'Glob', 'Grep',
-        'WebSearch', 'WebFetch',
-        'Task', 'TaskOutput', 'TaskStop',
-        'TeamCreate', 'TeamDelete', 'SendMessage',
-        'TodoWrite', 'ToolSearch', 'Skill',
-        'NotebookEdit',
-        'mcp__motherclaw__*'
-      ],
-      env: sdkEnv,
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
-      settingSources: ['project', 'user'],
-      mcpServers: {
-        motherclaw: {
-          command: 'node',
-          args: [mcpServerPath],
-          env: {
-            MOTHERCLAW_CHAT_JID: containerInput.chatJid,
-            MOTHERCLAW_GROUP_FOLDER: containerInput.groupFolder,
-            MOTHERCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
-          },
+  // Determine allowed tools (per-group override or defaults)
+  const defaultAllowedTools = [
+    'Bash',
+    'Read', 'Write', 'Edit', 'Glob', 'Grep',
+    'WebSearch', 'WebFetch',
+    'Task', 'TaskOutput', 'TaskStop',
+    'TeamCreate', 'TeamDelete', 'SendMessage',
+    'TodoWrite', 'ToolSearch', 'Skill',
+    'NotebookEdit',
+    'mcp__motherclaw__*'
+  ];
+  const allowedTools = agentCfg?.allowedTools && agentCfg.allowedTools.length > 0
+    ? agentCfg.allowedTools
+    : defaultAllowedTools;
+
+  // Build query options
+  const queryOptions: Record<string, any> = {
+    cwd: WORKSPACE_GROUP,
+    additionalDirectories: extraDirs.length > 0 ? extraDirs : undefined,
+    resume: sessionId,
+    resumeSessionAt: resumeAt,
+    systemPrompt: globalClaudeMd
+      ? { type: 'preset' as const, preset: 'claude_code' as const, append: globalClaudeMd }
+      : undefined,
+    allowedTools,
+    env: sdkEnv,
+    permissionMode: 'bypassPermissions',
+    allowDangerouslySkipPermissions: true,
+    settingSources: ['project', 'user'],
+    mcpServers: {
+      motherclaw: {
+        command: 'node',
+        args: [mcpServerPath],
+        env: {
+          MOTHERCLAW_CHAT_JID: containerInput.chatJid,
+          MOTHERCLAW_GROUP_FOLDER: containerInput.groupFolder,
+          MOTHERCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
         },
       },
-      hooks: {
-        PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
-      },
-    }
+    },
+    hooks: {
+      PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
+    },
+  };
+
+  // Apply per-group model override
+  if (agentCfg?.model) {
+    queryOptions.model = agentCfg.model;
+  }
+
+  // Apply per-group maxTurns override
+  if (agentCfg?.maxTurns) {
+    queryOptions.maxTurns = agentCfg.maxTurns;
+  }
+
+  for await (const message of query({
+    prompt: stream,
+    options: queryOptions,
   })) {
     messageCount++;
     const msgType = message.type === 'system' ? `system/${(message as { subtype?: string }).subtype}` : message.type;
@@ -444,6 +497,18 @@ async function runQuery(
 
     if (message.type === 'assistant' && 'uuid' in message) {
       lastAssistantUuid = (message as { uuid: string }).uuid;
+      turns++;
+    }
+
+    // Capture usage data from messages
+    if ('usage' in message) {
+      const u = (message as any).usage;
+      if (u) {
+        totalInputTokens += u.input_tokens || 0;
+        totalOutputTokens += u.output_tokens || 0;
+        totalCacheCreation += u.cache_creation_input_tokens || 0;
+        totalCacheRead += u.cache_read_input_tokens || 0;
+      }
     }
 
     if (message.type === 'system' && message.subtype === 'init') {
@@ -463,14 +528,32 @@ async function runQuery(
       writeOutput({
         status: 'success',
         result: textResult || null,
-        newSessionId
+        newSessionId,
+        usage: {
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          cacheCreationInputTokens: totalCacheCreation || undefined,
+          cacheReadInputTokens: totalCacheRead || undefined,
+        },
+        turns,
       });
     }
   }
 
   ipcPolling = false;
-  log(`Query done. Messages: ${messageCount}, results: ${resultCount}, lastAssistantUuid: ${lastAssistantUuid || 'none'}, closedDuringQuery: ${closedDuringQuery}`);
-  return { newSessionId, lastAssistantUuid, closedDuringQuery };
+  log(`Query done. Messages: ${messageCount}, results: ${resultCount}, lastAssistantUuid: ${lastAssistantUuid || 'none'}, closedDuringQuery: ${closedDuringQuery}, tokens: ${totalInputTokens}in/${totalOutputTokens}out`);
+  return {
+    newSessionId,
+    lastAssistantUuid,
+    closedDuringQuery,
+    usage: {
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      cacheCreationInputTokens: totalCacheCreation || undefined,
+      cacheReadInputTokens: totalCacheRead || undefined,
+    },
+    turns,
+  };
 }
 
 async function main(): Promise<void> {
@@ -536,8 +619,14 @@ async function main(): Promise<void> {
         break;
       }
 
-      // Emit session update so host can track it
-      writeOutput({ status: 'success', result: null, newSessionId: sessionId });
+      // Emit session update so host can track it (include usage from this query)
+      writeOutput({
+        status: 'success',
+        result: null,
+        newSessionId: sessionId,
+        usage: queryResult.usage,
+        turns: queryResult.turns,
+      });
 
       log('Query ended, waiting for next IPC message...');
 

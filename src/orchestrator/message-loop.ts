@@ -10,6 +10,8 @@ import {
   GROUPS_DIR,
   TIMEZONE,
   TRIGGER_PATTERN,
+  WEBHOOK_PORT,
+  WEBHOOK_SECRET,
 } from './config.js';
 import { startCredentialProxy } from './credential-proxy.js';
 import {
@@ -70,6 +72,8 @@ import { callExtensionStartup, getExtensionDbSchema } from './extensions.js';
 // Extensions loaded from src/index.ts;
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
+import { logAgentRun } from '../cost-tracking/index.js';
+import { startWebhookServer } from '../webhook/server.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -262,7 +266,7 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
   let hadError = false;
   let outputSentToUser = false;
 
-  const output = await runAgent(
+  const agentResult = await runAgent(
     agentGroup,
     prompt,
     replyJid,
@@ -300,7 +304,22 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
   await channel.setTyping?.(replyJid, false);
   if (idleTimer) clearTimeout(idleTimer);
 
-  if (output === 'error' || hadError) {
+  // Log cost tracking data
+  logAgentRun({
+    groupFolder: agentGroup.folder,
+    chatJid: replyJid,
+    triggerType: 'message',
+    inputTokens: agentResult.usage?.inputTokens || 0,
+    outputTokens: agentResult.usage?.outputTokens || 0,
+    cacheCreationTokens: agentResult.usage?.cacheCreationInputTokens || 0,
+    cacheReadTokens: agentResult.usage?.cacheReadInputTokens || 0,
+    durationMs: agentResult.durationMs,
+    turns: agentResult.turns || 0,
+    model: agentGroup.agentConfig?.model,
+    status: agentResult.status === 'error' || hadError ? 'error' : 'success',
+  });
+
+  if (agentResult.status === 'error' || hadError) {
     // If we already sent output to the user, don't roll back the cursor —
     // the user got their response and re-processing would send duplicates.
     if (outputSentToUser) {
@@ -323,14 +342,22 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
   return true;
 }
 
+interface RunAgentResult {
+  status: 'success' | 'error';
+  usage?: ContainerOutput['usage'];
+  durationMs: number;
+  turns?: number;
+}
+
 async function runAgent(
   group: RegisteredGroup,
   prompt: string,
   chatJid: string,
   onOutput?: (output: ContainerOutput) => Promise<void>,
-): Promise<'success' | 'error'> {
+): Promise<RunAgentResult> {
   const isMain = group.isMain === true;
   const sessionId = sessions[group.folder];
+  const startTime = Date.now();
 
   // Update tasks snapshot for container to read (filtered by group)
   const tasks = getAllTasks();
@@ -357,13 +384,19 @@ async function runAgent(
     new Set(Object.keys(registeredGroups)),
   );
 
-  // Wrap onOutput to track session ID from streamed results
+  // Track last usage data from streamed results
+  let lastUsage: ContainerOutput['usage'] | undefined;
+  let lastTurns: number | undefined;
+
+  // Wrap onOutput to track session ID and usage from streamed results
   const wrappedOnOutput = onOutput
     ? async (output: ContainerOutput) => {
         if (output.newSessionId) {
           sessions[group.folder] = output.newSessionId;
           setSession(group.folder, output.newSessionId);
         }
+        if (output.usage) lastUsage = output.usage;
+        if (output.turns !== undefined) lastTurns = output.turns;
         await onOutput(output);
       }
     : undefined;
@@ -377,6 +410,7 @@ async function runAgent(
       chatJid,
       isMain,
       assistantName: ASSISTANT_NAME,
+      agentConfig: group.agentConfig,
     };
     const onProcessCb = (proc: any, name: string) =>
       queue.registerProcess(chatJid, proc, name, group.folder);
@@ -391,23 +425,30 @@ async function runAgent(
             wrappedOnOutput,
           );
 
+    const durationMs = Date.now() - startTime;
+
     if (output.newSessionId) {
       sessions[group.folder] = output.newSessionId;
       setSession(group.folder, output.newSessionId);
     }
+
+    // Use usage from the output directly, or from the last streamed output
+    const usage = output.usage || lastUsage;
+    const turns = output.turns ?? lastTurns;
 
     if (output.status === 'error') {
       logger.error(
         { group: group.name, error: output.error },
         `${runtime === 'sandbox' ? 'Sandbox' : 'Container'} agent error`,
       );
-      return 'error';
+      return { status: 'error', usage, durationMs, turns };
     }
 
-    return 'success';
+    return { status: 'success', usage, durationMs, turns };
   } catch (err) {
+    const durationMs = Date.now() - startTime;
     logger.error({ group: group.name, err }, 'Agent error');
-    return 'error';
+    return { status: 'error', durationMs };
   }
 }
 
@@ -735,6 +776,36 @@ export async function main(): Promise<void> {
     writeGroupsSnapshot: (gf, im, ag, rj) =>
       writeGroupsSnapshot(gf, im, ag, rj),
   });
+  // Start webhook server if configured
+  if (WEBHOOK_SECRET) {
+    startWebhookServer(WEBHOOK_PORT, WEBHOOK_SECRET, {
+      sendMessage: async (jid, text) => {
+        const channel = findChannel(channels, jid);
+        if (channel) await channel.sendMessage(jid, text);
+      },
+      findGroupByFolder: (folder) => {
+        for (const [jid, group] of Object.entries(registeredGroups)) {
+          if (group.folder === folder) return { jid, name: group.name };
+        }
+        return undefined;
+      },
+      enqueueWebhook: (groupJid, prompt) => {
+        // Store the prompt as a message and enqueue for processing
+        const msgId = `webhook-${Date.now()}`;
+        storeMessage({
+          id: msgId,
+          chat_jid: groupJid,
+          sender: 'webhook',
+          sender_name: 'Webhook',
+          content: prompt,
+          timestamp: new Date().toISOString(),
+          is_from_me: true,
+        });
+        queue.enqueueMessageCheck(groupJid);
+      },
+    });
+  }
+
   queue.setProcessMessagesFn(processGroupMessages);
   recoverPendingMessages();
   startMessageLoop().catch((err) => {

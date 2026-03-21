@@ -43,6 +43,7 @@ export interface ContainerInput {
   isMain: boolean;
   isScheduledTask?: boolean;
   assistantName?: string;
+  agentConfig?: import('./types.js').AgentConfig;
 }
 
 export interface ContainerOutput {
@@ -50,6 +51,14 @@ export interface ContainerOutput {
   result: string | null;
   newSessionId?: string;
   error?: string;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
+  };
+  durationMs?: number;
+  turns?: number;
 }
 
 interface VolumeMount {

@@ -7,6 +7,8 @@ import './channels/index.js';
 
 // Load extensions (self-registering on import)
 import './triage/index.js';
+import './cost-tracking/index.js';
+import './webhook/index.js';
 
 // Start the orchestrator
 import { main } from './orchestrator/message-loop.js';

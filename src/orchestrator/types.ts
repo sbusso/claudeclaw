@@ -32,6 +32,14 @@ export interface ContainerConfig {
   timeout?: number; // Default: 300000 (5 minutes)
 }
 
+export interface AgentConfig {
+  model?: string;              // 'sonnet' | 'opus' | 'haiku' | full model ID
+  systemPrompt?: string;       // Appended to agent's system context
+  allowedTools?: string[];     // Tool allowlist override (empty = use defaults)
+  maxTurns?: number;           // Max conversation turns
+  costLimitUsd?: number;       // Per-run budget cap
+}
+
 export interface RegisteredGroup {
   name: string;
   folder: string;
@@ -41,6 +49,7 @@ export interface RegisteredGroup {
   requiresTrigger?: boolean; // Default: true for groups, false for solo chats
   isMain?: boolean; // True for the main control group (no trigger, elevated privileges)
   runtime?: 'container' | 'sandbox'; // Per-group runtime override (falls back to DEFAULT_RUNTIME)
+  agentConfig?: AgentConfig;
 }
 
 export interface NewMessage {
