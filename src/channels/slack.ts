@@ -9,9 +9,9 @@ import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../orchestrator/config.js';
 import { readEnvFile } from '../orchestrator/env.js';
 import { logger } from '../orchestrator/logger.js';
 import { registerChannel } from '../orchestrator/channel-registry.js';
+import type { ChannelOpts } from '../orchestrator/channel-registry.js';
 import type {
   Channel,
-  ChannelOpts,
   OnInboundMessage,
   OnChatMetadata,
   RegisteredGroup,

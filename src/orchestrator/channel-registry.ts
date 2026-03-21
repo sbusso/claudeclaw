@@ -1,7 +1,21 @@
 /**
  * Channel registry — channels self-register at startup.
  */
-import type { ChannelFactory } from './types.js';
+import type {
+  Channel,
+  OnInboundMessage,
+  OnChatMetadata,
+  RegisteredGroup,
+} from './types.js';
+
+export interface ChannelOpts {
+  onMessage: OnInboundMessage;
+  onChatMetadata: OnChatMetadata;
+  registeredGroups: () => Record<string, RegisteredGroup>;
+  registerGroup?: (jid: string, group: RegisteredGroup) => void;
+}
+
+export type ChannelFactory = (opts: ChannelOpts) => Channel | null;
 
 const registry = new Map<string, ChannelFactory>();
 
