@@ -7,6 +7,8 @@ description: Run initial MotherClaw setup. Use when user wants to install depend
 
 Run setup steps automatically. Only pause when user action is required (channel authentication, configuration choices). Setup uses `bash setup.sh` for bootstrap, then `npx tsx setup/index.ts --step <name>` for all other steps. Steps emit structured status blocks to stdout. Verbose logs go to `logs/setup.log`.
 
+**In plugin mode:** All setup commands must be run from `${CLAUDE_PLUGIN_ROOT}` with `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_INSTANCE` env vars set. See Mode Detection below for the exact command prefix. Never write to the plugin source directory — all state goes to the instance directory.
+
 **Principle:** When something is broken or missing, fix it. Don't tell the user to go fix it themselves unless it genuinely requires their manual action (e.g. authenticating a channel, pasting a secret token). If a dependency is missing, install it. If a service won't start, diagnose and repair. Ask the user for permission when needed, then do the work.
 
 **UX Note:** Use `AskUserQuestion` for all user-facing questions.
@@ -36,6 +38,15 @@ Instance detection:
 
 Print: "Running as MotherClaw plugin, instance: $MOTHERCLAW_INSTANCE"
 Ensure instance directories exist: `mkdir -p ${CLAUDE_PLUGIN_DATA}/instances/$MOTHERCLAW_INSTANCE/{store,groups,logs}`
+
+**CRITICAL — Plugin mode command prefix:** All `npx tsx setup/index.ts` and `npm run` commands in subsequent steps MUST be run with env vars set and from the plugin code directory. Use this pattern:
+
+```bash
+cd ${CLAUDE_PLUGIN_ROOT} && CLAUDE_PLUGIN_DATA=${CLAUDE_PLUGIN_DATA} MOTHERCLAW_INSTANCE=$MOTHERCLAW_INSTANCE npx tsx setup/index.ts --step <name>
+```
+
+This ensures the setup scripts read `.env` and state from the instance directory, NOT from the plugin source directory. Without these env vars, the scripts fall back to cwd (the plugin dir) and corrupt the plugin source.
+
 All subsequent steps use the instance directory for state paths. Plugin code (dist/service.js, agent/runner) is at `${CLAUDE_PLUGIN_ROOT}`.
 
 **Developer mode** (`.claude-plugin/` in cwd):
