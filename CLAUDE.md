@@ -11,6 +11,25 @@ Two separate entry points — plugin and service must not be conflated:
 
 The plugin entry is what `.claude-plugin/plugin.json` points to. The service entry is what `npm start`, `npm run dev`, and the launchd plist/systemd unit run.
 
+## Modes
+
+MotherClaw runs in two modes, detected by `CLAUDE_PLUGIN_DATA`:
+
+**Plugin mode** (`CLAUDE_PLUGIN_DATA` set):
+- Loaded via `claude --plugin-dir /path/to/motherclaw`
+- State in `CLAUDE_PLUGIN_DATA` (store/, groups/, logs/, .env)
+- Service plist/systemd passes `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_ENV_FILE`
+- No git operations, no self-improvement
+- Upgrade via `/customize` → fork + migrate
+
+**Developer mode** (`CLAUDE_PLUGIN_DATA` not set):
+- Cloned repo, `claude` runs from inside it
+- State in project root (store/, groups/, logs/, .env)
+- Full self-improvement — Claude edits its own source
+- Git/fork workflow
+
+**Path resolution:** `STATE_ROOT` in config.ts resolves from `CLAUDE_PLUGIN_DATA` or `PROJECT_ROOT`. `STORE_DIR`, `GROUPS_DIR`, `LOG_DIR` all derive from `STATE_ROOT`. `readEnvFile()` checks `MOTHERCLAW_ENV_FILE` then `CLAUDE_PLUGIN_DATA/.env` then `cwd/.env`.
+
 ## Architecture
 
 ```
