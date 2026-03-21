@@ -22,11 +22,12 @@ If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, 
 1. AskUserQuestion: "To customize MotherClaw fully, you need your own fork. First, fork sbusso/motherclaw on GitHub. What's your GitHub username?"
 2. AskUserQuestion: "Where should I clone the repo?" (default: `~/Code/motherclaw`)
 3. Stop running service:
-   - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist`
-   - Linux: `systemctl --user stop motherclaw`
+   - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.<instance>.plist`
+   - Linux: `systemctl --user stop motherclaw-<instance>`
 4. Clone: `git clone https://github.com/<username>/motherclaw.git <clone-path>`
-5. Copy state: `cp -r $CLAUDE_PLUGIN_DATA/{store,groups,.env} <clone-path>/`
-6. AskUserQuestion: "Copy logs too?" If yes: `cp -r $CLAUDE_PLUGIN_DATA/logs <clone-path>/`
+5. Determine instance path: `INSTANCE_DIR=$CLAUDE_PLUGIN_DATA/instances/<instance>` (read default from `$CLAUDE_PLUGIN_DATA/instances.json` if not specified)
+6. Copy state: `cp -r $INSTANCE_DIR/{store,groups,.env} <clone-path>/`
+7. AskUserQuestion: "Copy logs too?" If yes: `cp -r $INSTANCE_DIR/logs <clone-path>/`
 7. Clear stale sessions: `sqlite3 <clone-path>/store/messages.db "DELETE FROM sessions"`
 8. Install and build: `cd <clone-path> && npm install && npm run build`
 9. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/motherclaw.git`
@@ -44,14 +45,14 @@ If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, 
 
 | File | Purpose |
 |------|---------|
-| `src/index.ts` | Orchestrator: state, message loop, agent invocation |
-| `src/channels/whatsapp.ts` | WhatsApp connection, auth, send/receive |
-| `src/orchestrator/ipc.ts` | IPC watcher and task processing |
-| `src/orchestrator/router.ts` | Message formatting and outbound routing |
-| `src/orchestrator/types.ts` | TypeScript interfaces (includes Channel) |
-| `src/orchestrator/config.ts` | Assistant name, trigger pattern, directories |
+| `src/service.ts` | Service entry: loads channels/extensions, starts message loop |
+| `src/index.ts` | Plugin entry: non-blocking, loaded by Claude Code |
+| `src/orchestrator/message-loop.ts` | Core loop: poll, trigger, queue, dispatch agents |
+| `src/orchestrator/config.ts` | STATE_ROOT, paths, trigger pattern, runtime selection |
+| `src/orchestrator/channel-registry.ts` | Channel self-registration |
+| `src/orchestrator/extensions.ts` | Extension system (IPC, DB schema, startup hooks) |
+| `src/orchestrator/types.ts` | TypeScript interfaces (Channel, RegisteredGroup, AgentConfig) |
 | `src/orchestrator/db.ts` | Database initialization and queries |
-| `src/channels/whatsapp-auth.ts` | Standalone WhatsApp authentication script |
 | `groups/CLAUDE.md` | Global memory/persona |
 
 ## Common Customization Patterns

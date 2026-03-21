@@ -209,7 +209,7 @@ AskUserQuestion: Agent access to external directories?
 
 ## 7. Start Service
 
-**Plugin mode note:** The setup script auto-detects `CLAUDE_PLUGIN_DATA` from the environment and passes it to the generated plist/systemd unit. Log paths are redirected to `$CLAUDE_PLUGIN_DATA/logs/`. No manual env var configuration needed.
+**Plugin mode note:** The setup script auto-detects `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_INSTANCE` from the environment. In plugin mode, it always resolves an instance name (defaults to `'default'`). The generated plist/systemd unit includes `CLAUDE_PLUGIN_DATA`, `MOTHERCLAW_INSTANCE`, and `MOTHERCLAW_ENV_FILE`. Log paths are redirected to `$CLAUDE_PLUGIN_DATA/instances/$MOTHERCLAW_INSTANCE/logs/`. No manual env var configuration needed.
 
 If service already running: unload first.
 - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist`

@@ -26,7 +26,10 @@ export async function run(_args: string[]): Promise<void> {
   const nodePath = getNodePath();
   const homeDir = os.homedir();
   const pluginDataDir = process.env.CLAUDE_PLUGIN_DATA || undefined;
-  const instanceName = process.env.MOTHERCLAW_INSTANCE || undefined;
+  // In plugin mode, always resolve an instance name (default to 'default')
+  const instanceName = pluginDataDir
+    ? (process.env.MOTHERCLAW_INSTANCE || 'default')
+    : undefined;
 
   logger.info({ platform, nodePath, projectRoot, pluginDataDir, instanceName }, 'Setting up service');
 

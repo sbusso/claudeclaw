@@ -26,15 +26,32 @@ describe('readEnvFile', () => {
     fs.unlinkSync(tmpEnv);
   });
 
-  it('reads from CLAUDE_PLUGIN_DATA/.env when set', async () => {
-    const tmpDir = path.join(process.env.TMPDIR || '/tmp', 'test-plugin-data');
-    fs.mkdirSync(tmpDir, { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, '.env'), 'TEST_KEY=from_plugin_data\n');
+  it('reads from CLAUDE_PLUGIN_DATA/instances/default/.env when set', async () => {
+    const tmpDir = path.join(process.env.TMPDIR || '/tmp', 'test-plugin-data-env');
+    const instanceDir = path.join(tmpDir, 'instances', 'default');
+    fs.mkdirSync(instanceDir, { recursive: true });
+    fs.writeFileSync(path.join(instanceDir, '.env'), 'TEST_KEY=from_plugin_data\n');
     process.env.CLAUDE_PLUGIN_DATA = tmpDir;
+    delete process.env.MOTHERCLAW_INSTANCE;
 
     const { readEnvFile } = await import('./env.js');
     const result = readEnvFile(['TEST_KEY']);
     expect(result.TEST_KEY).toBe('from_plugin_data');
+
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
+  it('reads from named instance .env when MOTHERCLAW_INSTANCE set', async () => {
+    const tmpDir = path.join(process.env.TMPDIR || '/tmp', 'test-plugin-data-inst');
+    const instanceDir = path.join(tmpDir, 'instances', 'work');
+    fs.mkdirSync(instanceDir, { recursive: true });
+    fs.writeFileSync(path.join(instanceDir, '.env'), 'TEST_KEY=from_work_instance\n');
+    process.env.CLAUDE_PLUGIN_DATA = tmpDir;
+    process.env.MOTHERCLAW_INSTANCE = 'work';
+
+    const { readEnvFile } = await import('./env.js');
+    const result = readEnvFile(['TEST_KEY']);
+    expect(result.TEST_KEY).toBe('from_work_instance');
 
     fs.rmSync(tmpDir, { recursive: true });
   });

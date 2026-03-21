@@ -8,9 +8,34 @@ import { logger } from './logger.js';
  * do with the values. This keeps secrets out of the process environment
  * so they don't leak to child processes.
  */
+/**
+ * Resolve the .env file path.
+ * Priority: MOTHERCLAW_ENV_FILE > instance .env > cwd/.env
+ * Must match config.ts STATE_ROOT resolution for consistency.
+ */
+function resolveEnvPath(): string {
+  if (process.env.MOTHERCLAW_ENV_FILE) return process.env.MOTHERCLAW_ENV_FILE;
+
+  const pluginData = process.env.CLAUDE_PLUGIN_DATA;
+  if (pluginData) {
+    // Match config.ts instance resolution: MOTHERCLAW_INSTANCE > instances.json default > 'default'
+    let instance: string = process.env.MOTHERCLAW_INSTANCE || '';
+    if (!instance) {
+      try {
+        const config = JSON.parse(fs.readFileSync(path.join(pluginData, 'instances.json'), 'utf-8'));
+        instance = config.default || 'default';
+      } catch {
+        instance = 'default';
+      }
+    }
+    return path.join(pluginData, 'instances', instance, '.env');
+  }
+
+  return path.join(process.cwd(), '.env');
+}
+
 export function readEnvFile(keys: string[]): Record<string, string> {
-  const envFile = process.env.MOTHERCLAW_ENV_FILE
-    || path.join(process.env.CLAUDE_PLUGIN_DATA || process.cwd(), '.env');
+  const envFile = resolveEnvPath();
   let content: string;
   try {
     content = fs.readFileSync(envFile, 'utf-8');
