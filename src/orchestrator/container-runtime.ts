@@ -1,5 +1,5 @@
 /**
- * Container runtime abstraction for NanoClaw.
+ * Container runtime abstraction for MotherClaw.
  * All runtime-specific logic lives here so swapping runtimes means changing one file.
  */
 import { execSync } from 'child_process';
@@ -105,7 +105,7 @@ export function ensureContainerRuntimeRunning(): void {
         '║  2. Run: container system start                                ║',
       );
       console.error(
-        '║  3. Restart NanoClaw                                           ║',
+        '║  3. Restart MotherClaw                                           ║',
       );
       console.error(
         '╚════════════════════════════════════════════════════════════════╝\n',
@@ -115,7 +115,7 @@ export function ensureContainerRuntimeRunning(): void {
   }
 }
 
-/** Kill orphaned NanoClaw containers from previous runs. */
+/** Kill orphaned MotherClaw containers from previous runs. */
 export function cleanupOrphans(): void {
   try {
     const output = execSync(`${CONTAINER_RUNTIME_BIN} ls --format json`, {
@@ -127,7 +127,7 @@ export function cleanupOrphans(): void {
     const orphans = containers
       .filter(
         (c) =>
-          c.status === 'running' && c.configuration.id.startsWith('nanoclaw-'),
+          c.status === 'running' && c.configuration.id.startsWith('motherclaw-'),
       )
       .map((c) => c.configuration.id);
     for (const name of orphans) {

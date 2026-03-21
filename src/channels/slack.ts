@@ -48,7 +48,7 @@ export class SlackChannel implements Channel {
     this.opts = opts;
 
     // Read tokens from .env (not process.env — keeps secrets off the environment
-    // so they don't leak to child processes, matching NanoClaw's security pattern)
+    // so they don't leak to child processes, matching MotherClaw's security pattern)
     const env = readEnvFile(['SLACK_BOT_TOKEN', 'SLACK_APP_TOKEN']);
     const botToken = env.SLACK_BOT_TOKEN;
     const appToken = env.SLACK_APP_TOKEN;

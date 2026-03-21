@@ -281,7 +281,7 @@ export class GroupQueue {
     }
   }
 
-  async shutdown(): Promise<void> {
+  async shutdown(_gracePeriodMs: number = 10000): Promise<void> {
     this.shuttingDown = true;
     logger.info({ activeCount: this.activeCount }, 'GroupQueue shutting down');
   }

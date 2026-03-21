@@ -9,7 +9,7 @@ import './channels/index.js';
 import './triage/index.js';
 
 // Start the orchestrator
-import { main } from './orchestrator/nanoclaw-loop.js';
+import { main } from './orchestrator/message-loop.js';
 
 main().catch((err) => {
   console.error('Fatal error:', err);
