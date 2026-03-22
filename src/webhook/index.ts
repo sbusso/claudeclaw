@@ -1,6 +1,5 @@
 import { registerExtension } from '../orchestrator/extensions.js';
-import { WEBHOOK_PORT, WEBHOOK_SECRET } from '../orchestrator/config.js';
-import { startWebhookServer, WebhookDeps } from './server.js';
+import { WEBHOOK_SECRET } from '../orchestrator/config.js';
 import { logger } from '../orchestrator/logger.js';
 
 // Only register if webhook secret is configured

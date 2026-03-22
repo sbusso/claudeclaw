@@ -21,8 +21,6 @@ export const ASSISTANT_HAS_OWN_NUMBER =
 export const POLL_INTERVAL = 2000;
 export const SCHEDULER_POLL_INTERVAL = 60000;
 
-// Absolute paths needed for container mounts
-const PROJECT_ROOT = process.cwd();
 const HOME_DIR = process.env.HOME || os.homedir();
 
 // Mount security: allowlist stored OUTSIDE project root, never mounted into containers
@@ -47,7 +45,7 @@ export const STATE_ROOT = process.cwd();
 export const STORE_DIR = path.resolve(STATE_ROOT, 'store');
 export const GROUPS_DIR = path.resolve(STATE_ROOT, 'groups');
 export const LOG_DIR = path.resolve(STATE_ROOT, 'logs');
-export const DATA_DIR = path.resolve(PROJECT_ROOT, 'data');
+export const DATA_DIR = path.resolve(STATE_ROOT, 'data');
 
 export const CONTAINER_IMAGE =
   process.env.CONTAINER_IMAGE || 'motherclaw-agent:latest';
