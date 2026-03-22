@@ -394,7 +394,6 @@ Replace grep-based `memory_search` with [QMD](https://github.com/tobi/qmd) for h
 | `claudeclaw-gmail` | Gmail as a full channel (not just a tool) |
 | `claudeclaw-memory` | QMD-powered semantic memory (replaces grep search) |
 | `claudeclaw-tui` | Terminal UI for managing instances, groups, tasks |
-| `claudeclaw-router` | Multi-model routing engine with cost optimization |
 
 ## Development
 

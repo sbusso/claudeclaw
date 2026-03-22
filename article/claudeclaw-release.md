@@ -1,7 +1,7 @@
 ---
-title: "ClaudeClaw: From NanoClaw Fork to Claude Code Plugin"
-date: 2026-03-21
-tags: [claudeclaw, nanoclaw, claude-code, plugin, agents, sandbox]
+title: "ClaudeClaw: A Composable Agent Orchestrator for Claude Code"
+date: 2026-03-22
+tags: [claudeclaw, nanoclaw, claude-code, plugin, agents, sandbox, extensions]
 ---
 
 ## What Is ClaudeClaw
@@ -10,7 +10,7 @@ ClaudeClaw is a Claude Code plugin that turns Claude into a persistent, always-o
 
 It started as a fork of [NanoClaw](https://github.com/qwibitai/nanoclaw), a minimal agent orchestrator. The fork diverged significantly: ClaudeClaw was rebuilt as a Claude Code plugin with a pluggable extension system, structured memory, webhook triggers, per-group agent configuration, cost tracking, and native sandbox runtime support.
 
-The entire codebase is ~10K lines of TypeScript across 126 files, with 386 tests. It fits in Claude's context window.
+The core is ~8K lines of TypeScript with 355 tests. Channels and agents are installable extensions. The entire codebase fits in Claude's context window.
 
 ## Why Fork NanoClaw
 
@@ -47,18 +47,11 @@ agent/
   skills/                     # Agent-side skills
 ```
 
-The key architectural change is the **extension system**. Extensions register capabilities without modifying core:
+Two key architectural changes:
 
-```typescript
-registerExtension({
-  name: 'my-extension',
-  ipcHandlers: { 'my_action': handler },
-  onStartup: (deps) => { ... },
-  dbSchema: ['CREATE TABLE IF NOT EXISTS ...'],
-});
-```
+**Extension system.** Extensions register capabilities without modifying core. Triage, webhook triggers, and cost tracking are all extensions — the orchestrator core doesn't know about them.
 
-Triage, webhook triggers, and cost tracking are all implemented as extensions. The orchestrator core doesn't know about any of them.
+**Two entry points.** The plugin entry (`src/index.ts`) loads via `claude --plugin-dir` and returns immediately — no side effects. The service entry (`src/service.ts`) runs the message loop as a persistent background process. They must never be conflated.
 
 ### Phase 2: Sandbox Runtime
 
@@ -117,6 +110,67 @@ Recent Claude Code features (v2.1.76–81) were adopted:
 | autoMemoryDirectory | v2.1.80 | Unified SDK auto-memory + memory tools |
 | SendMessage auto-resume | v2.1.77 | Background agents auto-recover (zero code change) |
 
+### Phase 7: Message Router Refactor
+
+The monolithic `message-loop.ts` was split into two clean services:
+
+**MessageIngestion** — single entry point for all inbound messages (channels, webhooks, cron, IPC). Extensions hook pre/post processing without touching core.
+
+**MessageRouter** — single exit point for all outbound messages (agent responses, task results, extension output). Finds the right channel, formats, delivers.
+
+```
+Channels ──► MessageIngestion ──► GroupQueue ──► Agent
+Webhooks ──►   (pre/post hooks)
+Cron     ──►
+
+Agent    ──► MessageRouter ──► Channel.sendMessage()
+IPC      ──►   (pre/post hooks)
+Extensions─►
+```
+
+Extensions register hooks on both services: pre-hooks can modify/drop envelopes, post-hooks observe. This eliminated five separate `sendMessage` closures scattered through `main()` and replaced them with `router.route(envelope)`.
+
+### Phase 8: Composable Extension System
+
+The biggest architectural change: **channels and agents are now installable extensions**, not bundled in core.
+
+Slack and Triage+SWE were extracted into separate repos:
+- [claudeclaw-slack](https://github.com/sbusso/claudeclaw-slack) — Slack channel (Socket Mode, threads, typing)
+- [claudeclaw-triage](https://github.com/sbusso/claudeclaw-triage) — Triage agent + SWE queue + GitHub issues
+
+Each extension has a `manifest.json` declaring what it provides — channel, DB schema, env keys, skills, agent prompts, and lifecycle hooks:
+
+```json
+{
+  "name": "claudeclaw-slack",
+  "type": "channel",
+  "entry": "dist/index.js",
+  "dependencies": { "@slack/bolt": "^4.6.0" },
+  "skills": ["add-slack"],
+  "hooks": { "postInstall": "hooks/install.sh" }
+}
+```
+
+A manifest-based loader scans `extensions/claudeclaw-*/` at startup, validates each manifest, and dynamically imports the entry point. Extensions self-register via `registerChannel()` or `registerExtension()` on import.
+
+Install is a skill: `/install-extension slack` clones from GitHub, installs deps, compiles, copies skills into the host, and restarts the service. Uninstall reverses it. No merge conflicts — extensions are directories, not branches merged into your fork.
+
+This solves NanoClaw's biggest maintenance pain: upstream updates and extension conflicts. Core updates are `git pull`. Extension updates are `git pull` inside the extension directory. They never touch the same files.
+
+### Phase 9: Directory-as-Instance Model
+
+Plugin mode was simplified: **the current directory IS the instance**. No hidden paths, no `~/.claude/plugin-data/`, no instance manager.
+
+```
+~/assistants/personal/    ← one instance (cd here, run claude)
+  .env, store/, groups/, logs/, .claudeclaw.json
+~/assistants/work/        ← another instance
+```
+
+Multiple instances = multiple directories. `cd` is the instance switcher. Each directory gets its own launchd/systemd service (`com.claudeclaw.<dirname>.plist`).
+
+Want to customize the code? Clone the repo INTO the data directory. `.env`, `store/`, `groups/` are gitignored — they survive the clone. You're now in developer mode with full self-improvement capability.
+
 ## What ClaudeClaw Has Now
 
 ### Agent Triggers
@@ -151,44 +205,52 @@ Each group gets its own:
 /qodo-pr-resolver
 ```
 
-### Built-in Extensions
+### Built-in Extensions (core)
 
 - **Webhook triggers** — HTTP server, HMAC auth, rate limiting
 - **Cost tracking** — Token usage, estimated cost per run
-- **Triage + SWE queue** — First-level support, GitHub issue creation, sequential coding tasks
+
+### Installable Extensions
+
+- **[claudeclaw-slack](https://github.com/sbusso/claudeclaw-slack)** — Slack channel (Socket Mode, threads, typing)
+- **[claudeclaw-triage](https://github.com/sbusso/claudeclaw-triage)** — Triage agent + SWE queue + GitHub issues
 
 ## What's Next
 
-### Near-Term
+### Multi-Model Agent Routing
 
-**QMD Memory Backend (`/add-qmd`).** Replace grep-based `memory_search` with QMD's hybrid search — BM25 keyword matching + vector semantic search + LLM re-ranking. Fully local, no API keys, ~2GB for embedding models. The skill stub is ready; implementation is the next memory milestone.
+Support multiple LLM providers per agent. The `agentConfig.model` field expands to accept provider-prefixed strings (`openai/gpt-4o`, `google/gemini-pro`, `ollama/llama3`).
 
-**Channel Permission Relay.** Claude Code v2.1.81 introduced `--channels` for forwarding tool approval prompts. This could enable agents that mostly run autonomously but ask permission for destructive operations — "Should I delete this file?" appears as a Slack message with approve/deny. Waiting for the API to stabilize before building.
+**Phased approach:**
+1. **Provider-aware model field** — agent runner switches SDK based on prefix
+2. **Provider abstraction** — unified `Provider` interface wrapping each SDK, tool schema translation
+3. **Smart routing** — pick provider/model by task complexity, cost budget, latency. Fallback chains.
 
-### Longer-Term
+### QMD Semantic Memory
 
-**TUI Dashboard Plugin.** A terminal UI for monitoring agent activity — running jobs, recent runs, cost by group, memory stats, webhook events. React-based using a library like [OpenTUI](https://github.com/nicepkg/opentui) or [Ink](https://github.com/vadimdemedes/ink). Could be a standalone Claude Code plugin that reads ClaudeClaw's SQLite database.
+Replace grep-based `memory_search` with [QMD](https://github.com/tobi/qmd)'s hybrid BM25 + vector semantic search + LLM re-ranking. Fully local, no API keys. Automatic indexing of daily logs, topic files, CLAUDE.md, and archived conversations. `/add-qmd` skill handles installation and migration.
 
-**Memory Graph.** Beyond flat files — relationships between memory entries. "This person mentioned that project in this conversation." QMD gets us search; a graph layer gets us traversal and connection discovery.
+### Future Extensions
 
-**Multi-Model Routing.** Use haiku for simple questions, sonnet for general tasks, opus for complex reasoning — automatically, based on message complexity or group config. The per-group `agentConfig.model` is the foundation; auto-routing is the next step.
-
-**Agent Marketplace.** Shareable agent configurations — not just skills (code changes) but agent profiles (model, system prompt, tools, memory templates). "Install the code reviewer agent for your dev channel."
-
-**Workflow Chains.** Agent A completes → triggers Agent B. Webhook triggers are the primitive; workflow chains compose them. A CI failure triggers investigation → investigation triggers fix → fix triggers PR review.
+| Extension | Purpose |
+|-----------|---------|
+| `claudeclaw-discord` | Discord channel integration |
+| `claudeclaw-gmail` | Gmail as a full channel |
+| `claudeclaw-memory` | QMD-powered semantic memory |
+| `claudeclaw-tui` | Terminal UI for instance management |
 
 ## Numbers
 
-- **22 commits** in one day
-- **126 files** changed
-- **~10K lines** of TypeScript
-- **386 tests** passing
-- **24 skills** available
-- **3 built-in extensions** (webhook, cost tracking, triage)
+- **40+ commits** across two days
+- **~8K lines** core TypeScript (extensions separate)
+- **355 core tests** passing
+- **2 installable extensions** (Slack, Triage+SWE)
+- **2 built-in extensions** (webhook, cost tracking)
 - **2 runtimes** (sandbox default, container fallback)
 - **5 channels** supported (Slack, WhatsApp, Telegram, Discord, Gmail)
 - **3 agent triggers** (message, scheduled, webhook)
 - **3 memory tools** (save, search, get)
+- **Directory-as-instance** — no hidden state, no config files
 
 ## Try It
 
