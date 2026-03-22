@@ -9,15 +9,19 @@
  * The working directory IS the instance — all state (store/, groups/, .env)
  * lives in cwd. Multiple instances = multiple directories.
  */
+import { loadExtensions } from './orchestrator/extension-loader.js';
 
 async function start(): Promise<void> {
-  // Load channels (self-registering on import)
+  // Load built-in channels (self-registering on import)
+  // Slack, Telegram, WhatsApp are now installable extensions
   await import('./channels/index.js');
 
-  // Load extensions (self-registering on import)
-  await import('./triage/index.js');
+  // Load built-in extensions (always present in core)
   await import('./cost-tracking/index.js');
   await import('./webhook/index.js');
+
+  // Load installable extensions from extensions/ directory
+  await loadExtensions();
 
   // Start the orchestrator
   const { main } = await import('./orchestrator/message-loop.js');

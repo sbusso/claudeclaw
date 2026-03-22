@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run build:extensions",
+    "build:extensions": "for d in extensions/motherclaw-*/; do [ -f \"$d/tsconfig.json\" ] && (cd \"$d\" && npx tsc) || true; done",
     "start": "node dist/service.js",
     "dev": "tsx src/service.ts",
     "typecheck": "tsc --noEmit",
@@ -20,7 +21,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "^0.0.42",
-    "@slack/bolt": "^4.6.0",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "better-sqlite3": "^11.8.1",
     "cron-parser": "^5.5.0",

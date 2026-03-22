@@ -51,21 +51,49 @@ src/
   orchestrator/               # Core
     message-loop.ts           # THE HEART: poll, trigger, thread, queue, dispatch
     group-queue.ts            # Concurrency control for agent execution
-    extensions.ts             # Pluggable extension system
+    extensions.ts             # Pluggable extension system (registerExtension API)
+    extension-loader.ts       # Scans extensions/ dir, loads manifests, dynamic imports
+    extension-manifest.ts     # Manifest schema + validation
     channel-registry.ts       # Channel self-registration
+    ingestion.ts              # Inbound message processing (pre/post hooks)
+    outbound-router.ts        # Outbound message routing (pre/post hooks)
     db.ts                     # SQLite with extension schema support
     config.ts                 # Core config (from .env)
     env.ts                    # .env reader
     logger.ts                 # Pino logger
     types.ts                  # Core types (Channel, RegisteredGroup, NewMessage)
-  channels/                   # Channel implementations
-    slack.ts                  # Slack (Socket Mode, thread JIDs, reaction typing)
-  triage/                     # Triage extension
-    index.ts                  # Extension registration
-    queue-db.ts               # Task queue DB operations
-    swe-queue.ts              # Sequential SWE task processor
-    ipc-handlers.ts           # queue_swe_task + set_github_issue → dev channel
+  channels/                   # Built-in channels (whatsapp, telegram)
+  cost-tracking/              # Built-in: token usage + cost estimation
+  webhook/                    # Built-in: HTTP webhook triggers
+extensions/                   # Installable extensions (gitignored, per-instance)
+  motherclaw-slack/           # Slack channel (install with /install slack)
+  motherclaw-triage/          # Triage + SWE agents (install with /install triage)
 ```
+
+## Extension System
+
+Extensions are installable packages in `extensions/motherclaw-*/`. Each has a `manifest.json`:
+
+```json
+{
+  "name": "motherclaw-slack",
+  "version": "0.1.0",
+  "type": "channel",
+  "entry": "dist/index.js",
+  "dependencies": { "@slack/bolt": "^4.6.0" },
+  "provides": { "channel": "slack", "envKeys": ["SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"] },
+  "skills": ["add-slack"],
+  "hooks": { "postInstall": "hooks/install.sh", "postUninstall": "hooks/uninstall.sh" }
+}
+```
+
+**Install/uninstall:** `/install slack` clones, compiles, installs deps, copies skills, restarts. `/uninstall slack` reverses it.
+
+**Creating extensions:** Extension source imports core via `../../../dist/orchestrator/*.js` (relative paths). Core compiles first with `declaration: true`. Extensions compile against the `.d.ts` output. Self-register via `registerChannel()` or `registerExtension()` on import.
+
+**Available extensions:**
+- `motherclaw-slack` — Slack channel (Socket Mode, threads, reaction typing)
+- `motherclaw-triage` — Triage agent + SWE task queue + GitHub issue integration
 
 ## Key Concepts
 
