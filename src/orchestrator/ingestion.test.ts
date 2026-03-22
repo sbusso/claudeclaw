@@ -12,7 +12,6 @@ function mockDeps(overrides?: Partial<IngestionDeps>): IngestionDeps {
   return {
     checkTrigger: vi.fn(() => ({ needsTrigger: false, hasTrigger: true })),
     enqueueMessageCheck: vi.fn(),
-    sendToActive: vi.fn(() => false),
     ...overrides,
   };
 }

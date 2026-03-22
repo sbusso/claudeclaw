@@ -87,6 +87,8 @@ let lastAgentTimestamp: Record<string, string> = {};
 let messageLoopRunning = false;
 
 const channels: Channel[] = [];
+import type { MessageRouter } from './types.js';
+let moduleRouter: MessageRouter | null = null;
 const queue = new GroupQueue();
 
 function loadState(): void {
@@ -279,14 +281,18 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
           typeof result.result === 'string'
             ? result.result
             : JSON.stringify(result.result);
-        // Strip <internal>...</internal> blocks — agent uses these for internal reasoning
-        const text = raw.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
         logger.info(
           { group: group.name },
           `Agent output: ${raw.slice(0, 200)}`,
         );
-        if (text) {
-          await channel.sendMessage(replyJid, text);
+        // Route through MessageRouter (handles formatOutbound + hooks + channel delivery)
+        if (raw.trim() && moduleRouter) {
+          await moduleRouter.route({
+            chatJid: replyJid,
+            text: raw,
+            triggerType: 'agent-response',
+            groupFolder: group.folder,
+          });
           outputSentToUser = true;
         }
         // Only reset idle timer on actual results, not session-update markers (result: null)
@@ -653,19 +659,16 @@ export async function main(): Promise<void> {
         process.cwd(),
       );
       if (result.ok) {
-        await channel.sendMessage(chatJid, result.url);
+        await router.send(chatJid, result.url);
       } else {
-        await channel.sendMessage(
-          chatJid,
-          `Remote Control failed: ${result.error}`,
-        );
+        await router.send(chatJid, `Remote Control failed: ${result.error}`);
       }
     } else {
       const result = stopRemoteControl();
       if (result.ok) {
-        await channel.sendMessage(chatJid, 'Remote Control session ended.');
+        await router.send(chatJid, 'Remote Control session ended.');
       } else {
-        await channel.sendMessage(chatJid, result.error);
+        await router.send(chatJid, result.error);
       }
     }
   }
@@ -734,6 +737,7 @@ export async function main(): Promise<void> {
 
   // Create routing services (must be before subsystem startup)
   const router = createMessageRouter(channels);
+  moduleRouter = router;
 
   // Start subsystems (independently of connection handler)
   startSchedulerLoop({
@@ -751,14 +755,14 @@ export async function main(): Promise<void> {
       const isMainGroup = group.isMain === true;
       const needsTrigger = !isMainGroup && group.requiresTrigger !== false;
       if (!needsTrigger) return { needsTrigger: false, hasTrigger: true };
+      // For ingestion callers (webhook, extension), trigger check uses sender allowlist.
+      // Channel messages bypass ingestion entirely (handled by the polling loop with
+      // full trigger pattern matching on message content).
       const allowlistCfg = loadSenderAllowlist();
-      const hasTrigger =
-        TRIGGER_PATTERN.test('') || // placeholder — actual check in polling loop
-        isTriggerAllowed(chatJid, sender, allowlistCfg);
+      const hasTrigger = isTriggerAllowed(chatJid, sender, allowlistCfg);
       return { needsTrigger, hasTrigger };
     },
     enqueueMessageCheck: (chatJid) => queue.enqueueMessageCheck(chatJid),
-    sendToActive: (chatJid, formatted) => queue.sendMessage(chatJid, formatted),
   });
 
   // Wire extension hooks into services

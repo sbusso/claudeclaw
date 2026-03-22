@@ -12,7 +12,7 @@ import {
 import { formatOutbound } from './router.js';
 import { logger } from './logger.js';
 
-export function findChannel(
+function findChannel(
   channels: Channel[],
   jid: string,
 ): Channel | undefined {

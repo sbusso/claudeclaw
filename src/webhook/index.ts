@@ -2,17 +2,12 @@ import { registerExtension } from '../orchestrator/extensions.js';
 import { WEBHOOK_SECRET } from '../orchestrator/config.js';
 import { logger } from '../orchestrator/logger.js';
 
-// Only register if webhook secret is configured
+// Register webhook extension for DB schema only.
+// The webhook server itself is started in message-loop.ts main()
+// using the MessageIngestion service.
 if (WEBHOOK_SECRET) {
   registerExtension({
     name: 'webhook',
-    onStartup: (deps) => {
-      const { sendMessage, findChannel } = deps;
-      // We need group lookup and queue — wire via deps
-      // The extension startup receives limited deps, so we store the server reference
-      // and let message-loop wire the full deps
-      logger.info('Webhook extension registered (will start on main init)');
-    },
     dbSchema: [
       `CREATE TABLE IF NOT EXISTS webhook_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

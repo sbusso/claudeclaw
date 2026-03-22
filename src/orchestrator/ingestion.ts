@@ -24,8 +24,6 @@ export interface IngestionDeps {
   ) => { needsTrigger: boolean; hasTrigger: boolean };
   /** Enqueue a group for agent processing */
   enqueueMessageCheck: (chatJid: string) => void;
-  /** Try to pipe formatted message to active container */
-  sendToActive: (chatJid: string, formatted: string) => boolean;
 }
 
 export function createMessageIngestion(

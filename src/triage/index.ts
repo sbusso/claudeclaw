@@ -18,7 +18,7 @@ registerExtension({
 
   onStartup: (deps) => {
     startSweQueueLoop({
-      sendMessage: deps.sendMessage,
+      sendMessage: (jid: string, text: string) => deps.router.send(jid, text),
       runSweAgent: async (task) => {
         deps.logger.info(
           { taskId: task.id },
