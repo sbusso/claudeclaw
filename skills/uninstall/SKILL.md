@@ -1,7 +1,7 @@
 ---
-name: uninstall-service
-description: Stop and remove the MotherClaw background service for this instance
-trigger: /uninstall-service
+name: uninstall
+description: Stop and remove the MotherClaw background service and agents for this instance
+trigger: /uninstall
 ---
 
 # Uninstall Service
