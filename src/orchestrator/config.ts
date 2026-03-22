@@ -38,27 +38,11 @@ export const SENDER_ALLOWLIST_PATH = path.join(
   'motherclaw',
   'sender-allowlist.json',
 );
-// Use CLAUDE_PLUGIN_DATA for persistent state if available (v2.1.78+),
-// falls back to project-local directories.
-// In plugin mode, each instance gets its own subdirectory under instances/<name>.
-function readDefaultInstance(pluginData: string): string {
-  const configPath = path.join(pluginData, 'instances.json');
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    return config.default || 'default';
-  } catch {
-    return 'default';
-  }
-}
-
-function resolveStateRoot(): string {
-  const pluginData = process.env.CLAUDE_PLUGIN_DATA;
-  if (!pluginData) return process.cwd();
-  const instance = process.env.MOTHERCLAW_INSTANCE || readDefaultInstance(pluginData);
-  return path.resolve(pluginData, 'instances', instance);
-}
-
-export const STATE_ROOT = resolveStateRoot();
+// State lives in the current working directory — always.
+// In developer mode: cwd is the motherclaw repo.
+// In plugin mode: cwd is whatever directory the user ran `claude` from.
+// The directory IS the instance. Multiple instances = multiple directories.
+export const STATE_ROOT = process.cwd();
 
 export const STORE_DIR = path.resolve(STATE_ROOT, 'store');
 export const GROUPS_DIR = path.resolve(STATE_ROOT, 'groups');

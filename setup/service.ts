@@ -1,8 +1,10 @@
 /**
  * Step: service — Generate and load service manager config.
- * Replaces 08-setup-service.sh
  *
- * Fixes: Root→system systemd, WSL nohup fallback, no `|| true` swallowing errors.
+ * The service's WorkingDirectory is the data directory (cwd during setup).
+ * The service executable is dist/service.js from the code directory (codeRoot).
+ * In developer mode, both are the same directory.
+ * In plugin mode, codeRoot is CLAUDE_PLUGIN_ROOT, data dir is cwd.
  */
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -21,23 +23,21 @@ import {
 import { emitStatus } from './status.js';
 
 export async function run(_args: string[]): Promise<void> {
-  const projectRoot = process.cwd();
+  const dataDir = process.cwd();
+  // Code root: in plugin mode, CLAUDE_PLUGIN_ROOT points to the plugin code.
+  // In developer mode, code is in cwd.
+  const codeRoot = process.env.CLAUDE_PLUGIN_ROOT || dataDir;
   const platform = getPlatform();
   const nodePath = getNodePath();
   const homeDir = os.homedir();
-  const pluginDataDir = process.env.CLAUDE_PLUGIN_DATA || undefined;
-  // In plugin mode, always resolve an instance name (default to 'default')
-  const instanceName = pluginDataDir
-    ? (process.env.MOTHERCLAW_INSTANCE || 'default')
-    : undefined;
 
-  logger.info({ platform, nodePath, projectRoot, pluginDataDir, instanceName }, 'Setting up service');
+  logger.info({ platform, nodePath, codeRoot, dataDir }, 'Setting up service');
 
-  // Build first
+  // Build first (from code root)
   logger.info('Building TypeScript');
   try {
     execSync('npm run build', {
-      cwd: projectRoot,
+      cwd: codeRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     logger.info('Build succeeded');
@@ -46,7 +46,7 @@ export async function run(_args: string[]): Promise<void> {
     emitStatus('SETUP_SERVICE', {
       SERVICE_TYPE: 'unknown',
       NODE_PATH: nodePath,
-      PROJECT_PATH: projectRoot,
+      PROJECT_PATH: codeRoot,
       STATUS: 'failed',
       ERROR: 'build_failed',
       LOG: 'logs/setup.log',
@@ -54,17 +54,17 @@ export async function run(_args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  fs.mkdirSync(path.join(projectRoot, 'logs'), { recursive: true });
+  fs.mkdirSync(path.join(dataDir, 'logs'), { recursive: true });
 
   if (platform === 'macos') {
-    setupLaunchd(projectRoot, nodePath, homeDir, pluginDataDir, instanceName);
+    setupLaunchd(codeRoot, dataDir, nodePath, homeDir);
   } else if (platform === 'linux') {
-    setupLinux(projectRoot, nodePath, homeDir, pluginDataDir, instanceName);
+    setupLinux(codeRoot, dataDir, nodePath, homeDir);
   } else {
     emitStatus('SETUP_SERVICE', {
       SERVICE_TYPE: 'unknown',
       NODE_PATH: nodePath,
-      PROJECT_PATH: projectRoot,
+      PROJECT_PATH: codeRoot,
       STATUS: 'failed',
       ERROR: 'unsupported_platform',
       LOG: 'logs/setup.log',
@@ -74,13 +74,14 @@ export async function run(_args: string[]): Promise<void> {
 }
 
 function setupLaunchd(
-  projectRoot: string,
+  codeRoot: string,
+  dataDir: string,
   nodePath: string,
   homeDir: string,
-  pluginDataDir?: string,
-  instanceName?: string,
 ): void {
-  const serviceLabel = instanceName ? `com.motherclaw.${instanceName}` : 'com.motherclaw';
+  // Service label derived from data directory name for uniqueness
+  const dirName = path.basename(dataDir).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const serviceLabel = `com.motherclaw.${dirName}`;
   const plistFilename = `${serviceLabel}.plist`;
   const plistPath = path.join(
     homeDir,
@@ -90,33 +91,8 @@ function setupLaunchd(
   );
   fs.mkdirSync(path.dirname(plistPath), { recursive: true });
 
-  const logDir = pluginDataDir
-    ? instanceName
-      ? path.join(pluginDataDir, 'instances', instanceName, 'logs')
-      : path.join(pluginDataDir, 'logs')
-    : path.join(projectRoot, 'logs');
+  const logDir = path.join(dataDir, 'logs');
   fs.mkdirSync(logDir, { recursive: true });
-
-  const envFilePath = pluginDataDir
-    ? instanceName
-      ? path.join(pluginDataDir, 'instances', instanceName, '.env')
-      : path.join(pluginDataDir, '.env')
-    : undefined;
-
-  // Plugin-mode env vars injected into plist EnvironmentVariables dict
-  let extraEnvVars = '';
-  if (pluginDataDir) {
-    extraEnvVars += `
-        <key>CLAUDE_PLUGIN_DATA</key>
-        <string>${pluginDataDir}</string>
-        <key>MOTHERCLAW_ENV_FILE</key>
-        <string>${envFilePath}</string>`;
-  }
-  if (instanceName) {
-    extraEnvVars += `
-        <key>MOTHERCLAW_INSTANCE</key>
-        <string>${instanceName}</string>`;
-  }
 
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -127,10 +103,10 @@ function setupLaunchd(
     <key>ProgramArguments</key>
     <array>
         <string>${nodePath}</string>
-        <string>${projectRoot}/dist/service.js</string>
+        <string>${codeRoot}/dist/service.js</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>${projectRoot}</string>
+    <string>${dataDir}</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
@@ -140,7 +116,7 @@ function setupLaunchd(
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
         <key>HOME</key>
-        <string>${homeDir}</string>${extraEnvVars}
+        <string>${homeDir}</string>
     </dict>
     <key>StandardOutPath</key>
     <string>${logDir}/motherclaw.log</string>
@@ -173,7 +149,8 @@ function setupLaunchd(
   emitStatus('SETUP_SERVICE', {
     SERVICE_TYPE: 'launchd',
     NODE_PATH: nodePath,
-    PROJECT_PATH: projectRoot,
+    PROJECT_PATH: codeRoot,
+    DATA_DIR: dataDir,
     PLIST_PATH: plistPath,
     SERVICE_LOADED: serviceLoaded,
     STATUS: 'success',
@@ -182,38 +159,30 @@ function setupLaunchd(
 }
 
 function setupLinux(
-  projectRoot: string,
+  codeRoot: string,
+  dataDir: string,
   nodePath: string,
   homeDir: string,
-  pluginDataDir?: string,
-  instanceName?: string,
 ): void {
   const serviceManager = getServiceManager();
 
   if (serviceManager === 'systemd') {
-    setupSystemd(projectRoot, nodePath, homeDir, pluginDataDir, instanceName);
+    setupSystemd(codeRoot, dataDir, nodePath, homeDir);
   } else {
-    // WSL without systemd or other Linux without systemd
-    setupNohupFallback(projectRoot, nodePath, homeDir, pluginDataDir, instanceName);
+    setupNohupFallback(codeRoot, dataDir, nodePath, homeDir);
   }
 }
 
 /**
- * Kill any orphaned motherclaw node processes left from previous runs or debugging.
- * Prevents connection conflicts when two instances connect to the same channel simultaneously.
- *
- * When instanceName is set, only kills processes matching that instance (via MOTHERCLAW_INSTANCE env).
- * When not set, kills all processes matching the projectRoot service script.
+ * Kill any orphaned motherclaw node processes left from previous runs.
+ * Matches on the data directory to avoid killing other instances.
  */
-function killOrphanedProcesses(projectRoot: string, instanceName?: string): void {
+function killOrphanedProcesses(codeRoot: string): void {
   try {
-    const pattern = instanceName
-      ? `MOTHERCLAW_INSTANCE=${instanceName}.*${projectRoot}/dist/service\\.js`
-      : `${projectRoot}/dist/service\\.js`;
-    execSync(`pkill -f '${pattern}' || true`, {
+    execSync(`pkill -f '${codeRoot}/dist/service\\.js' || true`, {
       stdio: 'ignore',
     });
-    logger.info({ instanceName }, 'Stopped any orphaned motherclaw processes');
+    logger.info('Stopped any orphaned motherclaw processes');
   } catch {
     // pkill not available or no orphans
   }
@@ -221,12 +190,6 @@ function killOrphanedProcesses(projectRoot: string, instanceName?: string): void
 
 /**
  * Detect stale docker group membership in the user systemd session.
- *
- * When a user is added to the docker group mid-session, the user systemd
- * daemon (user@UID.service) keeps the old group list from login time.
- * Docker works in the terminal but not in the service context.
- *
- * Only relevant on Linux with user-level systemd (not root, not macOS, not WSL nohup).
  */
 function checkDockerGroupStale(): boolean {
   try {
@@ -234,29 +197,27 @@ function checkDockerGroupStale(): boolean {
       stdio: 'pipe',
       timeout: 10000,
     });
-    return false; // Docker works from systemd session
+    return false;
   } catch {
-    // Check if docker works from the current shell (to distinguish stale group vs broken docker)
     try {
       execSync('docker info', { stdio: 'pipe', timeout: 5000 });
-      return true; // Works in shell but not systemd session → stale group
+      return true;
     } catch {
-      return false; // Docker itself is not working, different issue
+      return false;
     }
   }
 }
 
 function setupSystemd(
-  projectRoot: string,
+  codeRoot: string,
+  dataDir: string,
   nodePath: string,
   homeDir: string,
-  pluginDataDir?: string,
-  instanceName?: string,
 ): void {
   const runningAsRoot = isRoot();
-  const unitName = instanceName ? `motherclaw-${instanceName}` : 'motherclaw';
+  const dirName = path.basename(dataDir).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const unitName = `motherclaw-${dirName}`;
 
-  // Root uses system-level service, non-root uses user-level
   let unitPath: string;
   let systemctlPrefix: string;
 
@@ -265,14 +226,11 @@ function setupSystemd(
     systemctlPrefix = 'systemctl';
     logger.info('Running as root — installing system-level systemd unit');
   } else {
-    // Check if user-level systemd session is available
     try {
       execSync('systemctl --user daemon-reload', { stdio: 'pipe' });
     } catch {
-      logger.warn(
-        'systemd user session not available — falling back to nohup wrapper',
-      );
-      setupNohupFallback(projectRoot, nodePath, homeDir, pluginDataDir, instanceName);
+      logger.warn('systemd user session not available — falling back to nohup wrapper');
+      setupNohupFallback(codeRoot, dataDir, nodePath, homeDir);
       return;
     }
     const unitDir = path.join(homeDir, '.config', 'systemd', 'user');
@@ -281,39 +239,21 @@ function setupSystemd(
     systemctlPrefix = 'systemctl --user';
   }
 
-  const logDir = pluginDataDir
-    ? instanceName
-      ? path.join(pluginDataDir, 'instances', instanceName, 'logs')
-      : path.join(pluginDataDir, 'logs')
-    : path.join(projectRoot, 'logs');
+  const logDir = path.join(dataDir, 'logs');
   fs.mkdirSync(logDir, { recursive: true });
 
-  const envFilePath = pluginDataDir
-    ? instanceName
-      ? path.join(pluginDataDir, 'instances', instanceName, '.env')
-      : path.join(pluginDataDir, '.env')
-    : undefined;
-
-  let extraEnvLines = '';
-  if (pluginDataDir) {
-    extraEnvLines += `\nEnvironment=CLAUDE_PLUGIN_DATA=${pluginDataDir}\nEnvironment=MOTHERCLAW_ENV_FILE=${envFilePath}`;
-  }
-  if (instanceName) {
-    extraEnvLines += `\nEnvironment=MOTHERCLAW_INSTANCE=${instanceName}`;
-  }
-
   const unit = `[Unit]
-Description=MotherClaw Personal Assistant${instanceName ? ` (${instanceName})` : ''}
+Description=MotherClaw Personal Assistant (${dirName})
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=${nodePath} ${projectRoot}/dist/service.js
-WorkingDirectory=${projectRoot}
+ExecStart=${nodePath} ${codeRoot}/dist/service.js
+WorkingDirectory=${dataDir}
 Restart=always
 RestartSec=5
 Environment=HOME=${homeDir}
-Environment=PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin${extraEnvLines}
+Environment=PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin
 StandardOutput=append:${logDir}/motherclaw.log
 StandardError=append:${logDir}/motherclaw.error.log
 
@@ -323,49 +263,28 @@ WantedBy=${runningAsRoot ? 'multi-user.target' : 'default.target'}`;
   fs.writeFileSync(unitPath, unit);
   logger.info({ unitPath }, 'Wrote systemd unit');
 
-  // Detect stale docker group before starting (user systemd only)
   const dockerGroupStale = !runningAsRoot && checkDockerGroupStale();
   if (dockerGroupStale) {
-    logger.warn(
-      'Docker group not active in systemd session — user was likely added to docker group mid-session',
-    );
+    logger.warn('Docker group not active in systemd session');
   }
 
-  // Kill orphaned motherclaw processes to avoid channel connection conflicts
-  killOrphanedProcesses(projectRoot, instanceName);
+  killOrphanedProcesses(codeRoot);
 
-  // Enable and start
-  try {
-    execSync(`${systemctlPrefix} daemon-reload`, { stdio: 'ignore' });
-  } catch (err) {
-    logger.error({ err }, 'systemctl daemon-reload failed');
-  }
+  try { execSync(`${systemctlPrefix} daemon-reload`, { stdio: 'ignore' }); } catch (err) { logger.error({ err }, 'daemon-reload failed'); }
+  try { execSync(`${systemctlPrefix} enable ${unitName}`, { stdio: 'ignore' }); } catch (err) { logger.error({ err }, 'enable failed'); }
+  try { execSync(`${systemctlPrefix} start ${unitName}`, { stdio: 'ignore' }); } catch (err) { logger.error({ err }, 'start failed'); }
 
-  try {
-    execSync(`${systemctlPrefix} enable ${unitName}`, { stdio: 'ignore' });
-  } catch (err) {
-    logger.error({ err }, 'systemctl enable failed');
-  }
-
-  try {
-    execSync(`${systemctlPrefix} start ${unitName}`, { stdio: 'ignore' });
-  } catch (err) {
-    logger.error({ err }, 'systemctl start failed');
-  }
-
-  // Verify
   let serviceLoaded = false;
   try {
     execSync(`${systemctlPrefix} is-active ${unitName}`, { stdio: 'ignore' });
     serviceLoaded = true;
-  } catch {
-    // Not active
-  }
+  } catch { /* Not active */ }
 
   emitStatus('SETUP_SERVICE', {
     SERVICE_TYPE: runningAsRoot ? 'systemd-system' : 'systemd-user',
     NODE_PATH: nodePath,
-    PROJECT_PATH: projectRoot,
+    PROJECT_PATH: codeRoot,
+    DATA_DIR: dataDir,
     UNIT_PATH: unitPath,
     SERVICE_LOADED: serviceLoaded,
     ...(dockerGroupStale ? { DOCKER_GROUP_STALE: true } : {}),
@@ -375,55 +294,26 @@ WantedBy=${runningAsRoot ? 'multi-user.target' : 'default.target'}`;
 }
 
 function setupNohupFallback(
-  projectRoot: string,
+  codeRoot: string,
+  dataDir: string,
   nodePath: string,
   homeDir: string,
-  pluginDataDir?: string,
-  instanceName?: string,
 ): void {
   logger.warn('No systemd detected — generating nohup wrapper script');
 
-  const scriptName = instanceName ? `start-motherclaw-${instanceName}.sh` : 'start-motherclaw.sh';
-  const pidName = instanceName ? `motherclaw-${instanceName}.pid` : 'motherclaw.pid';
-  const wrapperPath = path.join(projectRoot, scriptName);
-  const pidFile = path.join(projectRoot, pidName);
-
-  const logDir = pluginDataDir
-    ? instanceName
-      ? path.join(pluginDataDir, 'instances', instanceName, 'logs')
-      : path.join(pluginDataDir, 'logs')
-    : path.join(projectRoot, 'logs');
-
-  const envFilePath = pluginDataDir
-    ? instanceName
-      ? path.join(pluginDataDir, 'instances', instanceName, '.env')
-      : path.join(pluginDataDir, '.env')
-    : undefined;
-
-  const extraExports: string[] = [];
-  if (pluginDataDir) {
-    extraExports.push(
-      `export CLAUDE_PLUGIN_DATA=${JSON.stringify(pluginDataDir)}`,
-      `export MOTHERCLAW_ENV_FILE=${JSON.stringify(envFilePath)}`,
-    );
-  }
-  if (instanceName) {
-    extraExports.push(`export MOTHERCLAW_INSTANCE=${JSON.stringify(instanceName)}`);
-  }
-  if (extraExports.length > 0) {
-    extraExports.push('');
-  }
+  const wrapperPath = path.join(dataDir, 'start-motherclaw.sh');
+  const pidFile = path.join(dataDir, 'motherclaw.pid');
+  const logDir = path.join(dataDir, 'logs');
 
   const lines = [
     '#!/bin/bash',
-    `# ${scriptName} — Start MotherClaw without systemd`,
-    `# To stop: kill \\$(cat ${pidFile})`,
+    '# start-motherclaw.sh — Start MotherClaw without systemd',
+    `# To stop: kill $(cat ${pidFile})`,
     '',
     'set -euo pipefail',
     '',
     `export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin"`,
-    ...extraExports,
-    `cd ${JSON.stringify(projectRoot)}`,
+    `cd ${JSON.stringify(dataDir)}`,
     '',
     '# Stop existing instance if running',
     `if [ -f ${JSON.stringify(pidFile)} ]; then`,
@@ -436,7 +326,7 @@ function setupNohupFallback(
     'fi',
     '',
     'echo "Starting MotherClaw..."',
-    `nohup ${JSON.stringify(nodePath)} ${JSON.stringify(projectRoot + '/dist/service.js')} \\`,
+    `nohup ${JSON.stringify(nodePath)} ${JSON.stringify(codeRoot + '/dist/service.js')} \\`,
     `  >> ${JSON.stringify(logDir + '/motherclaw.log')} \\`,
     `  2>> ${JSON.stringify(logDir + '/motherclaw.error.log')} &`,
     '',
@@ -452,7 +342,8 @@ function setupNohupFallback(
   emitStatus('SETUP_SERVICE', {
     SERVICE_TYPE: 'nohup',
     NODE_PATH: nodePath,
-    PROJECT_PATH: projectRoot,
+    PROJECT_PATH: codeRoot,
+    DATA_DIR: dataDir,
     WRAPPER_PATH: wrapperPath,
     SERVICE_LOADED: false,
     FALLBACK: 'wsl_no_systemd',

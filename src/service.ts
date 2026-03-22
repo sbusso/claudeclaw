@@ -6,21 +6,10 @@
  * Start with: node dist/service.js
  * Dev mode:   npx tsx src/service.ts
  *
- * IMPORTANT: Uses dynamic imports to guarantee migration runs before
- * channels/extensions load. Static imports are hoisted in ES modules,
- * which would cause config.ts to resolve STATE_ROOT before migration.
+ * The working directory IS the instance — all state (store/, groups/, .env)
+ * lives in cwd. Multiple instances = multiple directories.
  */
 
-import { migrateToInstances } from './orchestrator/instance-migration.js';
-
-// Migrate legacy single-instance plugin state before anything else
-if (process.env.CLAUDE_PLUGIN_DATA) {
-  migrateToInstances(process.env.CLAUDE_PLUGIN_DATA);
-}
-
-// Dynamic imports: channels and extensions self-register on import,
-// and they pull in config.ts which computes STATE_ROOT.
-// Migration MUST complete before these resolve.
 async function start(): Promise<void> {
   // Load channels (self-registering on import)
   await import('./channels/index.js');
