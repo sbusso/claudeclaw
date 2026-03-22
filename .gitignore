@@ -6,3 +6,6 @@ data/
 groups/
 logs/
 .env
+
+# Installable extensions (per-instance, not checked in)
+extensions/
