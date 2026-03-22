@@ -10,27 +10,10 @@ import { logger } from './logger.js';
  */
 /**
  * Resolve the .env file path.
- * Priority: MOTHERCLAW_ENV_FILE > instance .env > cwd/.env
- * Must match config.ts STATE_ROOT resolution for consistency.
+ * Priority: MOTHERCLAW_ENV_FILE > cwd/.env
  */
 function resolveEnvPath(): string {
   if (process.env.MOTHERCLAW_ENV_FILE) return process.env.MOTHERCLAW_ENV_FILE;
-
-  const pluginData = process.env.CLAUDE_PLUGIN_DATA;
-  if (pluginData) {
-    // Match config.ts instance resolution: MOTHERCLAW_INSTANCE > instances.json default > 'default'
-    let instance: string = process.env.MOTHERCLAW_INSTANCE || '';
-    if (!instance) {
-      try {
-        const config = JSON.parse(fs.readFileSync(path.join(pluginData, 'instances.json'), 'utf-8'));
-        instance = config.default || 'default';
-      } catch {
-        instance = 'default';
-      }
-    }
-    return path.join(pluginData, 'instances', instance, '.env');
-  }
-
   return path.join(process.cwd(), '.env');
 }
 

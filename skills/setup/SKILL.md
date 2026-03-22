@@ -7,8 +7,6 @@ description: Run initial MotherClaw setup. Use when user wants to install depend
 
 Run setup steps automatically. Only pause when user action is required (channel authentication, configuration choices). Setup uses `bash setup.sh` for bootstrap, then `npx tsx setup/index.ts --step <name>` for all other steps. Steps emit structured status blocks to stdout. Verbose logs go to `logs/setup.log`.
 
-**In plugin mode:** All setup commands must be run from `${CLAUDE_PLUGIN_ROOT}` with `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_INSTANCE` env vars set. See Mode Detection below for the exact command prefix. Never write to the plugin source directory — all state goes to the instance directory.
-
 **Principle:** When something is broken or missing, fix it. Don't tell the user to go fix it themselves unless it genuinely requires their manual action (e.g. authenticating a channel, pasting a secret token). If a dependency is missing, install it. If a service won't start, diagnose and repair. Ask the user for permission when needed, then do the work.
 
 **UX Note:** Use `AskUserQuestion` for all user-facing questions.
@@ -23,35 +21,31 @@ cat .claude-plugin/plugin.json 2>/dev/null | grep '"name": "motherclaw"' && echo
 
 If `.claude-plugin/plugin.json` exists in the current directory AND contains `"name": "motherclaw"`, we're inside the MotherClaw repo → **Developer mode**. Otherwise, the skill was loaded via `--plugin-dir` → **Plugin mode**.
 
+### Directory = Instance model
+
+The current working directory IS the MotherClaw instance. All state (`.env`, `store/`, `groups/`, `logs/`) lives in cwd. Multiple instances = multiple directories. No hidden state, no `~/.claude/plugin-data/`.
+
 **Plugin mode** (no `.claude-plugin/` in cwd):
 - Skip step 0 (Git & Fork) entirely
-- Plugin data directory: `${CLAUDE_PLUGIN_DATA}`
+- The current directory is the data directory — all state goes here
 - Plugin code directory: `${CLAUDE_PLUGIN_ROOT}`
+- Ensure data directories exist: `mkdir -p store groups logs`
+- Check for `.motherclaw.json` — if it exists, this directory has been set up before; if not, this is a fresh setup
 
-Instance detection:
-- If `${CLAUDE_PLUGIN_DATA}/instances.json` exists → read default instance, set `MOTHERCLAW_INSTANCE`
-- If `${CLAUDE_PLUGIN_DATA}/instances.json` does NOT exist:
-  - If legacy state exists (store/, .env in `${CLAUDE_PLUGIN_DATA}` root) → migration is automatic (handled by service startup)
-  - If no state at all → AskUserQuestion: "Create your first MotherClaw instance. What should it be called?" (default: "default")
-    - Create `${CLAUDE_PLUGIN_DATA}/instances/<name>/` and `instances.json`
-    - Set `MOTHERCLAW_INSTANCE` to the new name
-
-Print: "Running as MotherClaw plugin, instance: $MOTHERCLAW_INSTANCE"
-Ensure instance directories exist: `mkdir -p ${CLAUDE_PLUGIN_DATA}/instances/$MOTHERCLAW_INSTANCE/{store,groups,logs}`
-
-**CRITICAL — Plugin mode command prefix:** All `npx tsx setup/index.ts` and `npm run` commands in subsequent steps MUST be run with env vars set and from the plugin code directory. Use this pattern:
+**CRITICAL — Plugin mode command prefix:** All `npx tsx setup/index.ts` commands in subsequent steps MUST be run from the plugin code directory with `CLAUDE_PLUGIN_ROOT` set, but the working directory for the service must be the USER's current directory (the data dir). Use this pattern:
 
 ```bash
-cd ${CLAUDE_PLUGIN_ROOT} && CLAUDE_PLUGIN_DATA=${CLAUDE_PLUGIN_DATA} MOTHERCLAW_INSTANCE=$MOTHERCLAW_INSTANCE npx tsx setup/index.ts --step <name>
+cd ${CLAUDE_PLUGIN_ROOT} && MOTHERCLAW_ENV_FILE=$(pwd)/.env npx tsx setup/index.ts --step <name>
 ```
 
-This ensures the setup scripts read `.env` and state from the instance directory, NOT from the plugin source directory. Without these env vars, the scripts fall back to cwd (the plugin dir) and corrupt the plugin source.
-
-All subsequent steps use the instance directory for state paths. Plugin code (dist/service.js, agent/runner) is at `${CLAUDE_PLUGIN_ROOT}`.
+Where `$(pwd)` resolves to the user's data directory BEFORE the `cd`. Store the data dir first:
+```bash
+DATA_DIR=$(pwd) && cd ${CLAUDE_PLUGIN_ROOT} && MOTHERCLAW_ENV_FILE=$DATA_DIR/.env npx tsx setup/index.ts --step <name>
+```
 
 **Developer mode** (`.claude-plugin/` in cwd):
 - Proceed with all steps unchanged
-- State lives in the current working directory
+- Code and state live in the same directory
 
 ## 0. Git & Fork Setup (Developer mode only)
 
@@ -226,9 +220,9 @@ AskUserQuestion: Agent access to external directories?
 
 ## 7. Start Service
 
-**Plugin mode note:** The setup script auto-detects `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_INSTANCE` from the environment. In plugin mode, it always resolves an instance name (defaults to `'default'`). The generated plist/systemd unit includes `CLAUDE_PLUGIN_DATA`, `MOTHERCLAW_INSTANCE`, and `MOTHERCLAW_ENV_FILE`. Log paths are redirected to `$CLAUDE_PLUGIN_DATA/instances/$MOTHERCLAW_INSTANCE/logs/`. No manual env var configuration needed.
+The setup script generates a service whose WorkingDirectory is the current data directory. In plugin mode, the ExecStart points to `${CLAUDE_PLUGIN_ROOT}/dist/service.js`. Logs go to `<dataDir>/logs/`.
 
-> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `/home/user/my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 If service already running: unload first.
 - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist`

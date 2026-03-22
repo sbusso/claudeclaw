@@ -7,12 +7,15 @@ description: Add new capabilities or modify MotherClaw behavior. Use when user w
 
 This skill helps users add capabilities or modify behavior. Use AskUserQuestion to understand what they want before making changes.
 
-## Plugin Mode Detection
+## Mode Detection
 
-Run: `echo $CLAUDE_PLUGIN_DATA`
+Check if `.claude-plugin/plugin.json` exists in cwd:
+```bash
+cat .claude-plugin/plugin.json 2>/dev/null | grep '"name": "motherclaw"' && echo "DEVELOPER_MODE" || echo "PLUGIN_MODE"
+```
 
-If set (plugin mode), offer the user a choice via AskUserQuestion:
-- **Fork to developer mode (Recommended)** — Clone the repo, migrate state, full self-improvement and customization
+If plugin mode, offer the user a choice via AskUserQuestion:
+- **Fork to developer mode (Recommended)** — Clone the repo into a new directory, copy state, full self-improvement and customization
 - **Continue in plugin mode** — Limited to channel setup and config changes (no code editing)
 
 If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, proceed with the normal workflow (limited to invoking existing skills like `/add-slack`, `/add-telegram`).
@@ -21,15 +24,14 @@ If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, 
 
 1. AskUserQuestion: "To customize MotherClaw fully, you need your own fork. First, fork sbusso/motherclaw on GitHub. What's your GitHub username?"
 2. AskUserQuestion: "Where should I clone the repo?" (default: `~/Code/motherclaw`)
-> **Service name:** In developer mode the service is `com.motherclaw` (macOS) / `motherclaw` (Linux). In plugin mode it's `com.motherclaw.<instance>` / `motherclaw-<instance>` where `<instance>` is the `MOTHERCLAW_INSTANCE` value. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
 
-3. Stop running service:
-   - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.<instance>.plist`
-   - Linux: `systemctl --user stop motherclaw-<instance>`
+3. Stop running service (service name derived from current directory name):
+   - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.<dirname>.plist`
+   - Linux: `systemctl --user stop motherclaw-<dirname>`
 4. Clone: `git clone https://github.com/<username>/motherclaw.git <clone-path>`
-5. Determine instance path: `INSTANCE_DIR=$CLAUDE_PLUGIN_DATA/instances/<instance>` (read default from `$CLAUDE_PLUGIN_DATA/instances.json` if not specified)
-6. Copy state: `cp -r $INSTANCE_DIR/{store,groups,.env} <clone-path>/`
-7. AskUserQuestion: "Copy logs too?" If yes: `cp -r $INSTANCE_DIR/logs <clone-path>/`
+5. Copy state from current data directory: `cp -r store groups .env <clone-path>/`
+6. AskUserQuestion: "Copy logs too?" If yes: `cp -r logs <clone-path>/`
 7. Clear stale sessions: `sqlite3 <clone-path>/store/messages.db "DELETE FROM sessions"`
 8. Install and build: `cd <clone-path> && npm install && npm run build`
 9. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/motherclaw.git`

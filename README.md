@@ -161,22 +161,24 @@ sqlite3 store/messages.db \
 ## As a Claude Code Plugin
 
 ```bash
+# Create a directory for your assistant
+mkdir ~/my-assistant && cd ~/my-assistant
+
+# Load MotherClaw as a plugin
 claude --plugin-dir /path/to/motherclaw
+
+# Run /setup to configure channels and start the service
 ```
 
-In plugin mode, MotherClaw supports **multiple instances** — each with isolated state, its own background service, running simultaneously:
+**Directory = Instance.** The current directory IS the MotherClaw instance. All state (`.env`, `store/`, `groups/`, `logs/`) lives in cwd. No hidden paths, no `~/.claude/plugin-data/`.
 
+**Multiple instances = multiple directories:**
 ```bash
-# First run prompts to create an instance
-# Subsequent runs auto-select the default
-
-# Override instance via env var
-MOTHERCLAW_INSTANCE=work claude --plugin-dir /path/to/motherclaw
+~/assistants/personal/    # cd here, run claude
+~/assistants/work/        # cd here, run claude
 ```
 
-Instance commands: `/instance-list`, `/instance-create`, `/instance-switch`, `/instance-delete`
-
-State lives in `CLAUDE_PLUGIN_DATA/instances/<name>/` — each instance gets its own `.env`, database, groups, and logs. Services are named per instance (`com.motherclaw.<name>.plist` on macOS).
+Services are named per directory (`com.motherclaw.personal.plist` on macOS). Want to customize the code? Clone the repo into your data directory — `.env`, `store/`, `groups/` are gitignored, so they survive the clone. Now you're in developer mode with full self-improvement.
 
 ## Philosophy
 

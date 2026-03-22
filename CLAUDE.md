@@ -13,42 +13,34 @@ The plugin entry is what `.claude-plugin/plugin.json` points to. The service ent
 
 ## Modes
 
-MotherClaw runs in two modes, detected by `CLAUDE_PLUGIN_DATA`:
+MotherClaw runs in two modes, detected by `.claude-plugin/plugin.json` in cwd:
 
-**Plugin mode** (`CLAUDE_PLUGIN_DATA` set):
+**Plugin mode** (no `.claude-plugin/` in cwd):
 - Loaded via `claude --plugin-dir /path/to/motherclaw`
-- Supports multiple **instances** — each with isolated state
-- State in `CLAUDE_PLUGIN_DATA/instances/<name>/` (store/, groups/, logs/, .env)
-- Service per instance: `com.motherclaw.<name>.plist` (macOS), `motherclaw-<name>.service` (Linux)
-- No git operations, no self-improvement
-- Upgrade via `/customize` → fork + migrate
+- Current directory IS the instance — all state lives in cwd
+- No hidden paths, no `~/.claude/plugin-data/`
+- Multiple instances = multiple directories (`cd` is the instance switcher)
+- Service per directory: `com.motherclaw.<dirname>.plist` (macOS), `motherclaw-<dirname>.service` (Linux)
+- Upgrade to developer mode: clone the repo INTO the data directory
 
-**Developer mode** (`CLAUDE_PLUGIN_DATA` not set):
+**Developer mode** (`.claude-plugin/plugin.json` exists in cwd):
 - Cloned repo, `claude` runs from inside it
-- State in project root (store/, groups/, logs/, .env)
-- No instance concept — single instance only
+- Code and state in the same directory
 - Full self-improvement — Claude edits its own source
 - Git/fork workflow
 
-### Instances (plugin mode only)
+### Directory = Instance
 
-Each instance gets fully isolated state, its own background service, and can run simultaneously.
+No instance manager. No switching commands. The directory you run `claude` from IS the MotherClaw instance.
 
 ```
-CLAUDE_PLUGIN_DATA/
-  instances.json                    # default instance + metadata
-  instances/
-    personal/                       # Full isolated state
-      .env, store/, groups/, logs/
-    work/
-      .env, store/, groups/, logs/
+~/assistants/personal/    ← one instance (cd here, run claude)
+  .env, store/, groups/, logs/, .motherclaw.json
+~/assistants/work/        ← another instance
+  .env, store/, groups/, logs/, .motherclaw.json
 ```
 
-**Detection:** `MOTHERCLAW_INSTANCE` env var → `instances.json` default → `'default'`
-**Commands:** `/instance-list`, `/instance-create`, `/instance-switch`, `/instance-delete`
-**Migration:** Legacy single-instance state auto-moves to `instances/default/` on first service startup.
-
-**Path resolution:** `STATE_ROOT` in config.ts resolves to `CLAUDE_PLUGIN_DATA/instances/<name>` (plugin) or `PROJECT_ROOT` (developer). `STORE_DIR`, `GROUPS_DIR`, `LOG_DIR` derive from `STATE_ROOT`. `readEnvFile()` checks `MOTHERCLAW_ENV_FILE` then `CLAUDE_PLUGIN_DATA/.env` then `cwd/.env`.
+**Path resolution:** `STATE_ROOT` = `process.cwd()` always. `STORE_DIR`, `GROUPS_DIR`, `LOG_DIR` derive from it. `readEnvFile()` checks `MOTHERCLAW_ENV_FILE` then `cwd/.env`.
 
 ## Architecture
 
