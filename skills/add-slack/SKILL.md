@@ -106,32 +106,65 @@ launchctl kickstart -k gui/$(id -u)/com.motherclaw
 
 ## Phase 4: Registration
 
-### Get Channel ID
+### 4a. Auto-detect bot display name
 
-Tell the user:
+Use the Slack API to get the bot's actual display name. Do NOT ask the user — detect it:
 
-> 1. Add the bot to a Slack channel (right-click channel → **View channel details** → **Integrations** → **Add apps**)
-> 2. In that channel, the channel ID is in the URL when you open it in a browser: `https://app.slack.com/client/T.../C0123456789` — the `C...` part is the channel ID
-> 3. Alternatively, right-click the channel name → **Copy link** — the channel ID is the last path segment
->
-> The JID format for MotherClaw is: `slack:C0123456789`
+```bash
+# Get bot user ID
+BOT_USER_ID=$(curl -s -H "Authorization: Bearer $SLACK_BOT_TOKEN" "https://slack.com/api/auth.test" | jq -r '.user_id')
+echo "Bot user ID: $BOT_USER_ID"
 
-Wait for the user to provide the channel ID.
+# Get bot display name
+BOT_DISPLAY_NAME=$(curl -s -H "Authorization: Bearer $SLACK_BOT_TOKEN" "https://slack.com/api/users.info?user=$BOT_USER_ID" | jq -r '.user.profile.display_name // .user.real_name // .user.name')
+echo "Bot display name: $BOT_DISPLAY_NAME"
+```
 
-### Register the channel
+**Set ASSISTANT_NAME in .env** to the detected bot name:
 
-The channel ID, name, and folder name are needed. Use `npx tsx setup/index.ts --step register` with the appropriate flags.
+```bash
+# Update or add ASSISTANT_NAME in .env
+if grep -q '^ASSISTANT_NAME=' .env; then
+  sed -i'' -e "s/^ASSISTANT_NAME=.*/ASSISTANT_NAME=$BOT_DISPLAY_NAME/" .env
+else
+  echo "ASSISTANT_NAME=$BOT_DISPLAY_NAME" >> .env
+fi
+```
+
+Print: "Detected Slack bot name: **$BOT_DISPLAY_NAME** — trigger pattern will be @$BOT_DISPLAY_NAME"
+
+If `BOT_DISPLAY_NAME` is empty or the API call failed, AskUserQuestion: "Couldn't auto-detect your Slack bot's display name. What is the bot's display name in Slack?"
+
+### 4b. List available channels
+
+Instead of asking the user to manually find channel IDs, list them:
+
+```bash
+curl -s -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+  "https://slack.com/api/conversations.list?types=public_channel,private_channel&exclude_archived=true&limit=100" \
+  | jq -r '.channels[] | select(.is_member == true) | "\(.id) #\(.name)"'
+```
+
+This shows only channels where the bot is already a member. If the list is empty, tell the user to add the bot to a channel first (right-click channel → **View channel details** → **Integrations** → **Add apps**), then re-run the list.
+
+AskUserQuestion: "Which channel should be the main channel? (Select from the list above, or provide a channel ID)"
+
+For each additional channel the user wants, repeat the selection.
+
+### 4c. Register the channel
+
+The channel ID, name, and folder name are needed. Use `npx tsx setup/index.ts --step register` with the appropriate flags. Use `$BOT_DISPLAY_NAME` for the trigger, NOT `${ASSISTANT_NAME}` (which may still be the old default).
 
 For a main channel (responds to all messages):
 
 ```bash
-npx tsx setup/index.ts --step register -- --jid "slack:<channel-id>" --name "<channel-name>" --folder "slack_main" --trigger "@${ASSISTANT_NAME}" --channel slack --no-trigger-required --is-main
+npx tsx setup/index.ts --step register -- --jid "slack:<channel-id>" --name "<channel-name>" --folder "slack_main" --trigger "@$BOT_DISPLAY_NAME" --channel slack --no-trigger-required --is-main
 ```
 
 For additional channels (trigger-only):
 
 ```bash
-npx tsx setup/index.ts --step register -- --jid "slack:<channel-id>" --name "<channel-name>" --folder "slack_<channel-name>" --trigger "@${ASSISTANT_NAME}" --channel slack
+npx tsx setup/index.ts --step register -- --jid "slack:<channel-id>" --name "<channel-name>" --folder "slack_<channel-name>" --trigger "@$BOT_DISPLAY_NAME" --channel slack
 ```
 
 ## Phase 5: Verify

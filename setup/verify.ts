@@ -11,7 +11,7 @@ import path from 'path';
 
 import Database from 'better-sqlite3';
 
-import { STORE_DIR } from '../src/orchestrator/config.js';
+import { DATA_DIR, STORE_DIR } from '../src/orchestrator/config.js';
 import { readEnvFile } from '../src/orchestrator/env.js';
 import { logger } from '../src/orchestrator/logger.js';
 import {
@@ -21,6 +21,11 @@ import {
   isRoot,
 } from './platform.js';
 import { emitStatus } from './status.js';
+
+// Derive service label from data directory for instance-specific checks
+const SERVICE_DIR_NAME = path.basename(DATA_DIR).replace(/[^a-zA-Z0-9_-]/g, '-');
+const SERVICE_LABEL = `com.motherclaw.${SERVICE_DIR_NAME}`;
+const SYSTEMD_UNIT = `motherclaw-${SERVICE_DIR_NAME}`;
 
 export async function run(_args: string[]): Promise<void> {
   const projectRoot = process.cwd();
@@ -36,9 +41,9 @@ export async function run(_args: string[]): Promise<void> {
   if (mgr === 'launchd') {
     try {
       const output = execSync('launchctl list', { encoding: 'utf-8' });
-      if (output.includes('com.motherclaw')) {
+      if (output.includes(SERVICE_LABEL)) {
         // Check if it has a PID (actually running)
-        const line = output.split('\n').find((l) => l.includes('com.motherclaw'));
+        const line = output.split('\n').find((l) => l.includes(SERVICE_LABEL));
         if (line) {
           const pidField = line.trim().split(/\s+/)[0];
           service = pidField !== '-' && pidField ? 'running' : 'stopped';
@@ -50,14 +55,14 @@ export async function run(_args: string[]): Promise<void> {
   } else if (mgr === 'systemd') {
     const prefix = isRoot() ? 'systemctl' : 'systemctl --user';
     try {
-      execSync(`${prefix} is-active motherclaw`, { stdio: 'ignore' });
+      execSync(`${prefix} is-active ${SYSTEMD_UNIT}`, { stdio: 'ignore' });
       service = 'running';
     } catch {
       try {
         const output = execSync(`${prefix} list-unit-files`, {
           encoding: 'utf-8',
         });
-        if (output.includes('motherclaw')) {
+        if (output.includes(SYSTEMD_UNIT)) {
           service = 'stopped';
         }
       } catch {
