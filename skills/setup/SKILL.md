@@ -40,8 +40,10 @@ cd ${CLAUDE_PLUGIN_ROOT} && MOTHERCLAW_ENV_FILE=$(pwd)/.env npx tsx setup/index.
 
 Where `$(pwd)` resolves to the user's data directory BEFORE the `cd`. Store the data dir first:
 ```bash
-DATA_DIR=$(pwd) && cd ${CLAUDE_PLUGIN_ROOT} && MOTHERCLAW_ENV_FILE=$DATA_DIR/.env npx tsx setup/index.ts --step <name>
+DATA_DIR=$(pwd) && cd ${CLAUDE_PLUGIN_ROOT} && DATA_DIR=$DATA_DIR MOTHERCLAW_ENV_FILE=$DATA_DIR/.env npx tsx setup/index.ts --step <name>
 ```
+
+`DATA_DIR` is passed as an env var so setup scripts (especially `service.ts`) know the actual data directory. Without it, they fall back to `process.cwd()` which is the plugin code root — not the data dir.
 
 **Developer mode** (`.claude-plugin/` in cwd):
 - Proceed with all steps unchanged

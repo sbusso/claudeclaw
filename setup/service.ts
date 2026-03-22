@@ -23,10 +23,13 @@ import {
 import { emitStatus } from './status.js';
 
 export async function run(_args: string[]): Promise<void> {
-  const dataDir = process.cwd();
+  // Data directory: explicit DATA_DIR env var > cwd.
+  // In plugin mode, the setup skill sets DATA_DIR to the instance directory
+  // while cwd is the plugin code root (needed to find npx/tsx).
+  const dataDir = process.env.DATA_DIR || process.cwd();
   // Code root: in plugin mode, CLAUDE_PLUGIN_ROOT points to the plugin code.
   // In developer mode, code is in cwd.
-  const codeRoot = process.env.CLAUDE_PLUGIN_ROOT || dataDir;
+  const codeRoot = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
   const platform = getPlatform();
   const nodePath = getNodePath();
   const homeDir = os.homedir();
