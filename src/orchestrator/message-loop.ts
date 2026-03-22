@@ -298,7 +298,11 @@ async function processGroupMessages(chatJid: string, router: MessageRouter): Pro
       }
 
       if (result.status === 'success') {
-        queue.notifyIdle(replyJid);
+        // Notify the ORIGINAL chatJid (channel), not replyJid (thread).
+        // The queue tracks active state by chatJid. Using replyJid here
+        // would leave the channel group stuck as active forever when
+        // a thread JID was created for the reply.
+        queue.notifyIdle(chatJid);
       }
 
       if (result.status === 'error') {
