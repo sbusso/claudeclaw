@@ -36,6 +36,13 @@ export const SENDER_ALLOWLIST_PATH = path.join(
   'motherclaw',
   'sender-allowlist.json',
 );
+// Code root: where the motherclaw source/dist lives.
+// Derived from this file's location: dist/orchestrator/config.js → ../../
+// In developer mode: same as STATE_ROOT.
+// In plugin mode: the plugin code directory (different from STATE_ROOT).
+const thisDir = path.dirname(new URL(import.meta.url).pathname);
+export const CODE_ROOT = path.resolve(thisDir, '..', '..');
+
 // State lives in the current working directory — always.
 // In developer mode: cwd is the motherclaw repo.
 // In plugin mode: cwd is whatever directory the user ran `claude` from.

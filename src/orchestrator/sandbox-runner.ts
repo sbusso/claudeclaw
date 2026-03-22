@@ -17,6 +17,7 @@ import path from 'path';
 
 import { readEnvFile } from './env.js';
 import {
+  CODE_ROOT,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
   DATA_DIR,
@@ -317,8 +318,9 @@ export function buildSandboxSettings(mounts: SandboxMount[]): SandboxSettings {
 export function buildSandboxArgs(settingsPath: string): string[] {
   // Sandbox runs the pre-compiled agent-runner directly on the host.
   // Build with: cd agent/runner && npx tsc
+  // Agent runner lives in the CODE root, not the data/state root.
   const agentRunnerPath = path.join(
-    process.cwd(),
+    CODE_ROOT,
     'agent',
     'runner',
     'dist',
