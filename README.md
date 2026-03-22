@@ -210,19 +210,19 @@ Services are named per directory (`com.motherclaw.personal.plist` on macOS). Wan
 
 ## Usage
 
-Talk to your assistant with the trigger word (default: `@Andy`):
+Talk to your assistant with the trigger word (default: `@MotherClaw`):
 
 ```
-@Andy send an overview of the sales pipeline every weekday morning at 9am
-@Andy review the git history for the past week each Friday and update the README if there's drift
-@Andy every Monday at 8am, compile news on AI developments and message me a briefing
+@MotherClaw send an overview of the sales pipeline every weekday morning at 9am
+@MotherClaw review the git history for the past week each Friday and update the README if there's drift
+@MotherClaw every Monday at 8am, compile news on AI developments and message me a briefing
 ```
 
 From the main channel, manage groups and tasks:
 ```
-@Andy list all scheduled tasks across groups
-@Andy pause the Monday briefing task
-@Andy join the Family Chat group
+@MotherClaw list all scheduled tasks across groups
+@MotherClaw pause the Monday briefing task
+@MotherClaw join the Family Chat group
 ```
 
 ## Architecture
@@ -359,7 +359,7 @@ Ask Claude Code. "Why isn't the scheduler running?" "What's in the recent logs?"
 ```bash
 npm run build    # Compile TypeScript
 npm run dev      # Run with tsx
-npm test         # Run tests (413 tests)
+npm test         # Run tests (415 tests)
 ```
 
 ## License
