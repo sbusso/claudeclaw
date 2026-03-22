@@ -26,6 +26,7 @@ const BASE_RETRY_MS = 5000;
 
 interface GroupState {
   active: boolean;
+  activeStartedAt: number | null;
   idleWaiting: boolean;
   isTaskContainer: boolean;
   runningTaskId: string | null;
@@ -36,6 +37,10 @@ interface GroupState {
   groupFolder: string | null;
   retryCount: number;
 }
+
+// If a group has been active for longer than this, force-clear it.
+// Safety net for any code path that fails to release the active flag.
+const STALE_ACTIVE_MS = 10 * 60 * 1000; // 10 minutes
 
 export class GroupQueue {
   private groups = new Map<string, GroupState>();
@@ -50,6 +55,7 @@ export class GroupQueue {
     if (!state) {
       state = {
         active: false,
+        activeStartedAt: null,
         idleWaiting: false,
         isTaskContainer: false,
         runningTaskId: null,
@@ -74,8 +80,19 @@ export class GroupQueue {
     const state = this.getGroup(groupJid);
 
     if (state.active) {
-      state.pendingMessages = true;
-      return;
+      // Safety net: force-clear stale active state
+      if (state.activeStartedAt && Date.now() - state.activeStartedAt > STALE_ACTIVE_MS) {
+        logger.warn({ groupJid, staleSinceMs: Date.now() - state.activeStartedAt }, 'Force-clearing stale active group');
+        state.active = false;
+        state.activeStartedAt = null;
+        state.process = null;
+        state.containerName = null;
+        state.groupFolder = null;
+        this.activeCount = Math.max(0, this.activeCount - 1);
+      } else {
+        state.pendingMessages = true;
+        return;
+      }
     }
 
     if (this.activeCount >= MAX_CONCURRENT_CONTAINERS) {
@@ -174,6 +191,7 @@ export class GroupQueue {
   ): Promise<void> {
     const state = this.getGroup(groupJid);
     state.active = true;
+    state.activeStartedAt = Date.now();
     state.idleWaiting = false;
     state.isTaskContainer = false;
     state.pendingMessages = false;
@@ -193,6 +211,7 @@ export class GroupQueue {
       this.scheduleRetry(groupJid, state);
     } finally {
       state.active = false;
+      state.activeStartedAt = null;
       state.process = null;
       state.containerName = null;
       state.groupFolder = null;
@@ -204,6 +223,7 @@ export class GroupQueue {
   private async runTask(groupJid: string, task: QueuedTask): Promise<void> {
     const state = this.getGroup(groupJid);
     state.active = true;
+    state.activeStartedAt = Date.now();
     state.idleWaiting = false;
     state.isTaskContainer = true;
     state.runningTaskId = task.id;
@@ -215,6 +235,7 @@ export class GroupQueue {
       logger.error({ groupJid, taskId: task.id, err }, 'Error running task');
     } finally {
       state.active = false;
+      state.activeStartedAt = null;
       state.isTaskContainer = false;
       state.runningTaskId = null;
       state.process = null;
