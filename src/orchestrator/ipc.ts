@@ -8,10 +8,10 @@ import { AvailableGroup } from './container-runner.js';
 import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
-import { RegisteredGroup } from './types.js';
+import { MessageRouter, RegisteredGroup } from './types.js';
 
 export interface IpcDeps {
-  sendMessage: (jid: string, text: string) => Promise<void>;
+  router: MessageRouter;
   registeredGroups: () => Record<string, RegisteredGroup>;
   registerGroup: (jid: string, group: RegisteredGroup) => void;
   syncGroups: (force: boolean) => Promise<void>;
@@ -80,7 +80,12 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   isMain ||
                   (targetGroup && targetGroup.folder === sourceGroup)
                 ) {
-                  await deps.sendMessage(data.chatJid, data.text);
+                  await deps.router.route({
+                    chatJid: data.chatJid,
+                    text: data.text,
+                    triggerType: 'ipc',
+                    groupFolder: sourceGroup,
+                  });
                   logger.info(
                     { chatJid: data.chatJid, sourceGroup },
                     'IPC message sent',
@@ -486,7 +491,10 @@ export async function processTaskIpc(
       const pluginHandlers = getExtensionIpcHandlers();
       const handler = pluginHandlers[data.type];
       if (handler) {
-        await handler(data, sourceGroup, isMain, deps);
+        // Extension IPC handlers expect { sendMessage } — proxy through router
+        await handler(data, sourceGroup, isMain, {
+          sendMessage: (jid: string, text: string) => deps.router.send(jid, text),
+        });
       } else {
         logger.warn({ type: data.type }, 'Unknown IPC task type');
       }

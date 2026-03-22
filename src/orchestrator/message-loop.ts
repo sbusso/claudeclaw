@@ -732,6 +732,9 @@ export async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Create routing services (must be before subsystem startup)
+  const router = createMessageRouter(channels);
+
   // Start subsystems (independently of connection handler)
   startSchedulerLoop({
     registeredGroups: () => registeredGroups,
@@ -739,18 +742,8 @@ export async function main(): Promise<void> {
     queue,
     onProcess: (groupJid, proc, containerName, groupFolder) =>
       queue.registerProcess(groupJid, proc, containerName, groupFolder),
-    sendMessage: async (jid, rawText) => {
-      const channel = findChannel(channels, jid);
-      if (!channel) {
-        logger.warn({ jid }, 'No channel owns JID, cannot send message');
-        return;
-      }
-      const text = formatOutbound(rawText);
-      if (text) await channel.sendMessage(jid, text);
-    },
+    router,
   });
-  // Create routing services
-  const router = createMessageRouter(channels);
   const ingestion = createMessageIngestion({
     checkTrigger: (chatJid, sender) => {
       const group = registeredGroups[chatJid];
@@ -782,7 +775,7 @@ export async function main(): Promise<void> {
   });
 
   startIpcWatcher({
-    sendMessage: (jid, text) => router.send(jid, text),
+    router,
     registeredGroups: () => registeredGroups,
     registerGroup,
     syncGroups: async (force: boolean) => {

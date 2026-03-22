@@ -52,7 +52,7 @@ beforeEach(() => {
   setRegisteredGroup('third@g.us', THIRD_GROUP);
 
   deps = {
-    sendMessage: async () => {},
+    router: { route: async () => {}, send: async () => {}, addPreHook: () => {}, addPostHook: () => {} },
     registeredGroups: () => groups,
     registerGroup: (jid, group) => {
       groups[jid] = group;

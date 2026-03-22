@@ -19,7 +19,7 @@ import {
 import { GroupQueue } from './group-queue.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { logger } from './logger.js';
-import { RegisteredGroup, ScheduledTask } from './types.js';
+import { MessageRouter, RegisteredGroup, ScheduledTask } from './types.js';
 
 /**
  * Compute the next run time for a recurring task, anchored to the
@@ -72,7 +72,7 @@ export interface SchedulerDependencies {
     containerName: string,
     groupFolder: string,
   ) => void;
-  sendMessage: (jid: string, text: string) => Promise<void>;
+  router: MessageRouter;
 }
 
 async function runTask(
@@ -185,8 +185,13 @@ async function runTask(
       async (streamedOutput: ContainerOutput) => {
         if (streamedOutput.result) {
           result = streamedOutput.result;
-          // Forward result to user (sendMessage handles formatting)
-          await deps.sendMessage(task.chat_jid, streamedOutput.result);
+          // Forward result to user via outbound router
+          await deps.router.route({
+            chatJid: task.chat_jid,
+            text: streamedOutput.result,
+            triggerType: 'task-result',
+            groupFolder: task.group_folder,
+          });
           scheduleClose();
         }
         if (streamedOutput.status === 'success') {
