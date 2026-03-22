@@ -200,8 +200,11 @@ Each skill will:
 1. Install the channel code (via `git merge` of the skill branch)
 2. Collect credentials/tokens and write to `.env`
 3. Authenticate (WhatsApp QR/pairing, or verify token-based connection)
-4. Register the chat with the correct JID format
-5. Build and verify
+4. **Auto-detect the bot's display name** from the platform API and set `ASSISTANT_NAME` in `.env`
+5. Register the chat with the correct JID format (trigger uses the detected bot name)
+6. Build and verify
+
+**IMPORTANT:** The channel skill sets `ASSISTANT_NAME` in `.env` based on the platform API (e.g., Slack's `auth.test` → `users.info`). This ensures the trigger pattern matches the bot's actual display name. Never hardcode a name or use the default.
 
 **After all channel skills complete**, install dependencies and rebuild — channel merges may introduce new packages:
 
