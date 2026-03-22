@@ -1,8 +1,8 @@
 {
-  "name": "motherclaw-agent-runner",
+  "name": "claudeclaw-agent-runner",
   "version": "1.0.0",
   "type": "module",
-  "description": "Agent runner for MotherClaw (container and sandbox)",
+  "description": "Agent runner for ClaudeClaw (container and sandbox)",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

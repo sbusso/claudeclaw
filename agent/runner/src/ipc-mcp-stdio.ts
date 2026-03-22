@@ -1,5 +1,5 @@
 /**
- * Stdio MCP Server for MotherClaw
+ * Stdio MCP Server for ClaudeClaw
  * Standalone process that agent teams subagents can inherit.
  * Reads context from environment variables, writes IPC files for the host.
  */
@@ -11,15 +11,15 @@ import fs from 'fs';
 import path from 'path';
 import { CronExpressionParser } from 'cron-parser';
 
-// Runtime-agnostic: sandbox sets MOTHERCLAW_IPC_DIR, container uses /workspace/ipc
-const IPC_DIR = process.env.MOTHERCLAW_IPC_DIR || '/workspace/ipc';
+// Runtime-agnostic: sandbox sets CLAUDECLAW_IPC_DIR, container uses /workspace/ipc
+const IPC_DIR = process.env.CLAUDECLAW_IPC_DIR || '/workspace/ipc';
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
 const TASKS_DIR = path.join(IPC_DIR, 'tasks');
 
 // Context from environment variables (set by the agent runner)
-const chatJid = process.env.MOTHERCLAW_CHAT_JID!;
-const groupFolder = process.env.MOTHERCLAW_GROUP_FOLDER!;
-const isMain = process.env.MOTHERCLAW_IS_MAIN === '1';
+const chatJid = process.env.CLAUDECLAW_CHAT_JID!;
+const groupFolder = process.env.CLAUDECLAW_GROUP_FOLDER!;
+const isMain = process.env.CLAUDECLAW_IS_MAIN === '1';
 
 function writeIpcFile(dir: string, data: object): string {
   fs.mkdirSync(dir, { recursive: true });
@@ -36,7 +36,7 @@ function writeIpcFile(dir: string, data: object): string {
 }
 
 const server = new McpServer({
-  name: 'motherclaw',
+  name: 'claudeclaw',
   version: '1.0.0',
 });
 
@@ -338,7 +338,7 @@ Use available_groups.json to find the JID for a group. The folder name must be c
 // Memory tools — lightweight, file-based, QMD-upgradeable
 // ---------------------------------------------------------------------------
 
-const WORKSPACE_GROUP = process.env.MOTHERCLAW_GROUP_DIR || '/workspace/group';
+const WORKSPACE_GROUP = process.env.CLAUDECLAW_GROUP_DIR || '/workspace/group';
 
 /** Recursively find .md files under a directory */
 function findMarkdownFiles(dir: string): string[] {

@@ -1,5 +1,5 @@
 /**
- * MotherClaw Agent Runner
+ * ClaudeClaw Agent Runner
  * Runs inside a container, receives config via stdin, outputs result to stdout
  *
  * Input protocol:
@@ -75,12 +75,12 @@ interface SDKUserMessage {
 
 // Runtime-agnostic path resolution:
 // Docker/Container: paths are /workspace/* via volume mounts (env vars absent, fallback used)
-// Sandbox: MOTHERCLAW_*_DIR env vars provide actual host paths
-const WORKSPACE_GROUP   = process.env.MOTHERCLAW_GROUP_DIR   || '/workspace/group';
-const WORKSPACE_IPC     = process.env.MOTHERCLAW_IPC_DIR     || '/workspace/ipc';
-const WORKSPACE_PROJECT = process.env.MOTHERCLAW_PROJECT_DIR || '/workspace/project';
-const WORKSPACE_GLOBAL  = process.env.MOTHERCLAW_GLOBAL_DIR  || '/workspace/global';
-const WORKSPACE_EXTRA   = process.env.MOTHERCLAW_EXTRA_DIR   || '/workspace/extra';
+// Sandbox: CLAUDECLAW_*_DIR env vars provide actual host paths
+const WORKSPACE_GROUP   = process.env.CLAUDECLAW_GROUP_DIR   || '/workspace/group';
+const WORKSPACE_IPC     = process.env.CLAUDECLAW_IPC_DIR     || '/workspace/ipc';
+const WORKSPACE_PROJECT = process.env.CLAUDECLAW_PROJECT_DIR || '/workspace/project';
+const WORKSPACE_GLOBAL  = process.env.CLAUDECLAW_GLOBAL_DIR  || '/workspace/global';
+const WORKSPACE_EXTRA   = process.env.CLAUDECLAW_EXTRA_DIR   || '/workspace/extra';
 
 const IPC_INPUT_DIR = path.join(WORKSPACE_IPC, 'input');
 const IPC_INPUT_CLOSE_SENTINEL = path.join(IPC_INPUT_DIR, '_close');
@@ -132,8 +132,8 @@ async function readStdin(): Promise<string> {
   });
 }
 
-const OUTPUT_START_MARKER = '---MOTHERCLAW_OUTPUT_START---';
-const OUTPUT_END_MARKER = '---MOTHERCLAW_OUTPUT_END---';
+const OUTPUT_START_MARKER = '---CLAUDECLAW_OUTPUT_START---';
+const OUTPUT_END_MARKER = '---CLAUDECLAW_OUTPUT_END---';
 
 function writeOutput(output: ContainerOutput): void {
   console.log(OUTPUT_START_MARKER);
@@ -513,7 +513,7 @@ async function runQuery(
     'TeamCreate', 'TeamDelete', 'SendMessage',
     'TodoWrite', 'ToolSearch', 'Skill',
     'NotebookEdit',
-    'mcp__motherclaw__*'
+    'mcp__claudeclaw__*'
   ];
   const allowedTools = agentCfg?.allowedTools && agentCfg.allowedTools.length > 0
     ? agentCfg.allowedTools
@@ -539,13 +539,13 @@ async function runQuery(
     allowDangerouslySkipPermissions: true,
     settingSources: ['project', 'user'],
     mcpServers: {
-      motherclaw: {
+      claudeclaw: {
         command: 'node',
         args: [mcpServerPath],
         env: {
-          MOTHERCLAW_CHAT_JID: containerInput.chatJid,
-          MOTHERCLAW_GROUP_FOLDER: containerInput.groupFolder,
-          MOTHERCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
+          CLAUDECLAW_CHAT_JID: containerInput.chatJid,
+          CLAUDECLAW_GROUP_FOLDER: containerInput.groupFolder,
+          CLAUDECLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
         },
       },
     },

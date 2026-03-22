@@ -1,5 +1,5 @@
 /**
- * Extension manifest schema for installable MotherClaw extensions.
+ * Extension manifest schema for installable ClaudeClaw extensions.
  * Each extension has a manifest.json in its root directory.
  */
 

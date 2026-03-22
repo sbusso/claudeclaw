@@ -1,4 +1,4 @@
-# MotherClaw
+# ClaudeClaw
 
 Persistent agent orchestrator plugin for Claude Code.
 
@@ -13,14 +13,14 @@ The plugin entry is what `.claude-plugin/plugin.json` points to. The service ent
 
 ## Modes
 
-MotherClaw runs in two modes, detected by `.claude-plugin/plugin.json` in cwd:
+ClaudeClaw runs in two modes, detected by `.claude-plugin/plugin.json` in cwd:
 
 **Plugin mode** (no `.claude-plugin/` in cwd):
-- Loaded via `claude --plugin-dir /path/to/motherclaw`
+- Loaded via `claude --plugin-dir /path/to/claudeclaw`
 - Current directory IS the instance — all state lives in cwd
 - No hidden paths, no `~/.claude/plugin-data/`
 - Multiple instances = multiple directories (`cd` is the instance switcher)
-- Service per directory: `com.motherclaw.<dirname>.plist` (macOS), `motherclaw-<dirname>.service` (Linux)
+- Service per directory: `com.claudeclaw.<dirname>.plist` (macOS), `claudeclaw-<dirname>.service` (Linux)
 - Upgrade to developer mode: clone the repo INTO the data directory
 
 **Developer mode** (`.claude-plugin/plugin.json` exists in cwd):
@@ -31,16 +31,16 @@ MotherClaw runs in two modes, detected by `.claude-plugin/plugin.json` in cwd:
 
 ### Directory = Instance
 
-No instance manager. No switching commands. The directory you run `claude` from IS the MotherClaw instance.
+No instance manager. No switching commands. The directory you run `claude` from IS the ClaudeClaw instance.
 
 ```
 ~/assistants/personal/    ← one instance (cd here, run claude)
-  .env, store/, groups/, logs/, .motherclaw.json
+  .env, store/, groups/, logs/, .claudeclaw.json
 ~/assistants/work/        ← another instance
-  .env, store/, groups/, logs/, .motherclaw.json
+  .env, store/, groups/, logs/, .claudeclaw.json
 ```
 
-**Path resolution:** `STATE_ROOT` = `process.cwd()` always. `STORE_DIR`, `GROUPS_DIR`, `LOG_DIR` derive from it. `readEnvFile()` checks `MOTHERCLAW_ENV_FILE` then `cwd/.env`.
+**Path resolution:** `STATE_ROOT` = `process.cwd()` always. `STORE_DIR`, `GROUPS_DIR`, `LOG_DIR` derive from it. `readEnvFile()` checks `CLAUDECLAW_ENV_FILE` then `cwd/.env`.
 
 ## Architecture
 
@@ -66,17 +66,17 @@ src/
   cost-tracking/              # Built-in: token usage + cost estimation
   webhook/                    # Built-in: HTTP webhook triggers
 extensions/                   # Installable extensions (gitignored, per-instance)
-  motherclaw-slack/           # Slack channel (install with /install slack)
-  motherclaw-triage/          # Triage + SWE agents (install with /install triage)
+  claudeclaw-slack/           # Slack channel (install with /install slack)
+  claudeclaw-triage/          # Triage + SWE agents (install with /install triage)
 ```
 
 ## Extension System
 
-Extensions are installable packages in `extensions/motherclaw-*/`. Each has a `manifest.json`:
+Extensions are installable packages in `extensions/claudeclaw-*/`. Each has a `manifest.json`:
 
 ```json
 {
-  "name": "motherclaw-slack",
+  "name": "claudeclaw-slack",
   "version": "0.1.0",
   "type": "channel",
   "entry": "dist/index.js",
@@ -92,8 +92,8 @@ Extensions are installable packages in `extensions/motherclaw-*/`. Each has a `m
 **Creating extensions:** Extension source imports core via `../../../dist/orchestrator/*.js` (relative paths). Core compiles first with `declaration: true`. Extensions compile against the `.d.ts` output. Self-register via `registerChannel()` or `registerExtension()` on import.
 
 **Available extensions:**
-- `motherclaw-slack` — Slack channel (Socket Mode, threads, reaction typing)
-- `motherclaw-triage` — Triage agent + SWE task queue + GitHub issue integration
+- `claudeclaw-slack` — Slack channel (Socket Mode, threads, reaction typing)
+- `claudeclaw-triage` — Triage agent + SWE task queue + GitHub issue integration
 
 ## Key Concepts
 
@@ -118,13 +118,13 @@ Per-group override: set `"runtime": "sandbox"` in the registered group config.
 
 **Auth:** Sandbox passes real credentials directly (not through credential proxy). Network isolation via `allowedDomains` restricts outbound traffic to `api.anthropic.com` and `localhost` only, preventing credential exfiltration.
 
-**Path mapping:** Container mode maps `/workspace/*` via volume mounts. Sandbox runs on the host, so the agent runner uses `MOTHERCLAW_*_DIR` env vars (`MOTHERCLAW_GROUP_DIR`, `MOTHERCLAW_IPC_DIR`, `MOTHERCLAW_PROJECT_DIR`, `MOTHERCLAW_GLOBAL_DIR`, `MOTHERCLAW_EXTRA_DIR`) to resolve actual host paths.
+**Path mapping:** Container mode maps `/workspace/*` via volume mounts. Sandbox runs on the host, so the agent runner uses `CLAUDECLAW_*_DIR` env vars (`CLAUDECLAW_GROUP_DIR`, `CLAUDECLAW_IPC_DIR`, `CLAUDECLAW_PROJECT_DIR`, `CLAUDECLAW_GLOBAL_DIR`, `CLAUDECLAW_EXTRA_DIR`) to resolve actual host paths.
 
 **Agent runner compilation:** Sandbox can't use `tsx` (blocked Unix sockets). Pre-compile with `cd agent/runner && npx tsc`. The compiled output at `agent/runner/dist/index.js` is used by sandbox; container mode uses its own copy baked into the image.
 
 **srt settings schema:** The `--settings <path>` JSON file requires ALL fields including `allowRead: []` even if empty. Omitting causes silent schema validation failure. Key fields: `network.allowedDomains`, `network.deniedDomains`, `network.allowLocalBinding`, `filesystem.denyRead`, `filesystem.allowRead`, `filesystem.allowWrite`, `filesystem.denyWrite`.
 
-**Config reading:** MotherClaw does NOT use `dotenv`. The `RUNTIME` value in `.env` is read via `readEnvFile()` in `config.ts`.
+**Config reading:** ClaudeClaw does NOT use `dotenv`. The `RUNTIME` value in `.env` is read via `readEnvFile()` in `config.ts`.
 
 ## Memory System
 
@@ -219,4 +219,4 @@ Then import in `src/index.ts`.
 
 **Sandbox agent EPERM on network:** The srt settings `allowRead: []` field MUST be present (even empty). Without it, the entire settings file silently fails validation and network is fully blocked. Also verify `allowedDomains` includes `api.anthropic.com`.
 
-**Sandbox agent can't find paths:** Check that `MOTHERCLAW_*_DIR` env vars are being set in `sandbox-runner.ts` `runSandboxAgent()`. The agent runner falls back to `/workspace/*` (container paths) if env vars are missing.
+**Sandbox agent can't find paths:** Check that `CLAUDECLAW_*_DIR` env vars are being set in `sandbox-runner.ts` `runSandboxAgent()`. The agent runner falls back to `/workspace/*` (container paths) if env vars are missing.

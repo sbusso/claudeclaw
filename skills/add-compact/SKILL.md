@@ -28,7 +28,7 @@ git fetch upstream skill/compact
 git merge upstream/skill/compact
 ```
 
-> **Note:** `upstream` is the remote pointing to `sbusso/motherclaw`. If using a different remote name, substitute accordingly.
+> **Note:** `upstream` is the remote pointing to `sbusso/claudeclaw`. If using a different remote name, substitute accordingly.
 
 This adds:
 - `src/session-commands.ts` (extract and authorize session commands)
@@ -49,20 +49,20 @@ npm run build
 ./docker/build.sh
 ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ### Restart service
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 ## Phase 3: Verify
 
 ### Integration Test
 
-1. Start MotherClaw in dev mode: `npm run dev`
+1. Start ClaudeClaw in dev mode: `npm run dev`
 2. From the **main group** (self-chat), send exactly: `/compact`
 3. Verify:
    - The agent acknowledges compaction (e.g., "Conversation compacted.")
@@ -103,8 +103,8 @@ launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
 ### Validation on Fresh Clone
 
 ```bash
-git clone <your-fork> /tmp/motherclaw-test
-cd /tmp/motherclaw-test
+git clone <your-fork> /tmp/claudeclaw-test
+cd /tmp/claudeclaw-test
 claude  # then run /add-compact
 npm run build
 npm test
@@ -119,7 +119,7 @@ npm test
 
 - **Main-group or trusted/admin sender only.** The main group is the user's private self-chat and is trusted (see `docs/SECURITY.md`). Non-main groups are untrusted — a careless or malicious user could wipe the agent's short-term memory. However, the device owner (`is_from_me`) is always trusted and can compact from any group.
 - **No auto-compaction.** This skill implements manual compaction only. Automatic threshold-based compaction is a separate concern and should be a separate skill.
-- **No config file.** MotherClaw's philosophy is customization through code changes, not configuration sprawl.
+- **No config file.** ClaudeClaw's philosophy is customization through code changes, not configuration sprawl.
 - **Transcript archived before compaction.** The existing `PreCompact` hook in the agent-runner archives the full transcript to `conversations/` before the SDK compacts it.
 - **Session continues after compaction.** This is not a destructive reset. The conversation continues with summarized context.
 

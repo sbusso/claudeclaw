@@ -1,17 +1,17 @@
 ---
-name: update-motherclaw
-description: Efficiently bring upstream MotherClaw updates into a customized install, with preview, selective cherry-pick, and low token usage.
+name: update-claudeclaw
+description: Efficiently bring upstream ClaudeClaw updates into a customized install, with preview, selective cherry-pick, and low token usage.
 ---
 
 # About
 
-Your MotherClaw fork drifts from upstream as you customize it. This skill pulls upstream changes into your install without losing your modifications.
+Your ClaudeClaw fork drifts from upstream as you customize it. This skill pulls upstream changes into your install without losing your modifications.
 
-Run `/update-motherclaw` in Claude Code.
+Run `/update-claudeclaw` in Claude Code.
 
 ## How it works
 
-**Preflight**: checks for clean working tree (`git status --porcelain`). If `upstream` remote is missing, asks you for the URL (defaults to `https://github.com/sbusso/motherclaw.git`) and adds it. Detects the upstream branch name (`main` or `master`).
+**Preflight**: checks for clean working tree (`git status --porcelain`). If `upstream` remote is missing, asks you for the URL (defaults to `https://github.com/sbusso/claudeclaw.git`) and adds it. Detects the upstream branch name (`main` or `master`).
 
 **Backup**: creates a timestamped backup branch and tag (`backup/pre-update-<hash>-<timestamp>`, `pre-update-<hash>-<timestamp>`) before touching anything. Safe to run multiple times.
 
@@ -50,7 +50,7 @@ Only opens files with actual conflicts. Uses `git log`, `git diff`, and `git sta
 ---
 
 # Goal
-Help a user with a customized MotherClaw install safely incorporate upstream changes without a fresh reinstall and without blowing tokens.
+Help a user with a customized ClaudeClaw install safely incorporate upstream changes without a fresh reinstall and without blowing tokens.
 
 # Operating principles
 - Never proceed with a dirty working tree.
@@ -68,7 +68,7 @@ If output is non-empty:
 Confirm remotes:
 - `git remote -v`
 If `upstream` is missing:
-- Ask the user for the upstream repo URL (default: `https://github.com/sbusso/motherclaw.git`).
+- Ask the user for the upstream repo URL (default: `https://github.com/sbusso/claudeclaw.git`).
 - Add it: `git remote add upstream <user-provided-url>`
 - Then: `git fetch upstream --prune`
 
@@ -230,8 +230,8 @@ Show:
 Tell the user:
 - To rollback: `git reset --hard <backup-tag-from-step-1>`
 - Backup branch also exists: `backup/pre-update-<HASH>-<TIMESTAMP>`
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux).
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux).
 
 - Restart the service to apply changes:
-  - If using launchd: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist && launchctl load ~/Library/LaunchAgents/com.motherclaw.plist`
+  - If using launchd: `launchctl unload ~/Library/LaunchAgents/com.claudeclaw.plist && launchctl load ~/Library/LaunchAgents/com.claudeclaw.plist`
   - If running manually: restart `npm run dev`

@@ -1,4 +1,4 @@
-# MotherClaw Specification
+# ClaudeClaw Specification
 
 A personal Claude assistant with multi-channel support, persistent memory per conversation, scheduled tasks, and container-isolated agent execution.
 
@@ -64,7 +64,7 @@ A personal Claude assistant with multi-channel support, persistent memory per co
 │  │    • Read, Write, Edit, Glob, Grep (file operations)           │    │
 │  │    • WebSearch, WebFetch (internet access)                     │    │
 │  │    • agent-browser (browser automation)                        │    │
-│  │    • mcp__motherclaw__* (scheduler tools via IPC)                │    │
+│  │    • mcp__claudeclaw__* (scheduler tools via IPC)                │    │
 │  │                                                                │    │
 │  └──────────────────────────────────────────────────────────────┘    │
 │                                                                       │
@@ -239,7 +239,7 @@ See existing skills (`/add-whatsapp`, `/add-telegram`, `/add-slack`, `/add-disco
 ## Folder Structure
 
 ```
-motherclaw/
+claudeclaw/
 ├── CLAUDE.md                      # Project context for Claude Code
 ├── docs/
 │   ├── SPEC.md                    # This specification document
@@ -317,12 +317,12 @@ motherclaw/
 │   └── ipc/                       # Container IPC (messages/, tasks/)
 │
 ├── logs/                          # Runtime logs (gitignored)
-│   ├── motherclaw.log               # Host stdout
-│   └── motherclaw.error.log         # Host stderr
+│   ├── claudeclaw.log               # Host stdout
+│   └── claudeclaw.error.log         # Host stderr
 │   # Note: Per-container logs are in groups/{folder}/logs/container-*.log
 │
 └── launchd/
-    └── com.motherclaw.plist         # macOS service configuration
+    └── com.claudeclaw.plist         # macOS service configuration
 ```
 
 ---
@@ -345,7 +345,7 @@ export const GROUPS_DIR = path.resolve(PROJECT_ROOT, 'groups');
 export const DATA_DIR = path.resolve(PROJECT_ROOT, 'data');
 
 // Container configuration
-export const CONTAINER_IMAGE = process.env.CONTAINER_IMAGE || 'motherclaw-agent:latest';
+export const CONTAINER_IMAGE = process.env.CONTAINER_IMAGE || 'claudeclaw-agent:latest';
 export const CONTAINER_TIMEOUT = parseInt(process.env.CONTAINER_TIMEOUT || '1800000', 10); // 30min default
 export const IPC_POLL_INTERVAL = 1000;
 export const IDLE_TIMEOUT = parseInt(process.env.IDLE_TIMEOUT || '1800000', 10); // 30min — keep container alive after last result
@@ -417,7 +417,7 @@ Or edit the default in `src/config.ts`. This changes:
 ### Placeholder Values in launchd
 
 Files with `{{PLACEHOLDER}}` values need to be configured:
-- `{{PROJECT_ROOT}}` - Absolute path to your motherclaw installation
+- `{{PROJECT_ROOT}}` - Absolute path to your claudeclaw installation
 - `{{NODE_PATH}}` - Path to node binary (detected via `which node`)
 - `{{HOME}}` - User's home directory
 
@@ -425,7 +425,7 @@ Files with `{{PLACEHOLDER}}` values need to be configured:
 
 ## Memory System
 
-MotherClaw uses a hierarchical memory system based on CLAUDE.md files.
+ClaudeClaw uses a hierarchical memory system based on CLAUDE.md files.
 
 ### Memory Hierarchy
 
@@ -501,7 +501,7 @@ Sessions enable conversation continuity - Claude remembers what you talked about
    ├── cwd: groups/{group-name}/
    ├── prompt: conversation history + current message
    ├── resume: session_id (for continuity)
-   └── mcpServers: motherclaw (scheduler)
+   └── mcpServers: claudeclaw (scheduler)
    │
    ▼
 8. Claude processes message:
@@ -558,7 +558,7 @@ This allows the agent to understand the conversation context even if it wasn't m
 
 ## Scheduled Tasks
 
-MotherClaw has a built-in scheduler that runs tasks as full agents in their group's context.
+ClaudeClaw has a built-in scheduler that runs tasks as full agents in their group's context.
 
 ### How Scheduling Works
 
@@ -580,7 +580,7 @@ MotherClaw has a built-in scheduler that runs tasks as full agents in their grou
 ```
 User: @Andy remind me every Monday at 9am to review the weekly metrics
 
-Claude: [calls mcp__motherclaw__schedule_task]
+Claude: [calls mcp__claudeclaw__schedule_task]
         {
           "prompt": "Send a reminder to review weekly metrics. Be encouraging!",
           "schedule_type": "cron",
@@ -595,7 +595,7 @@ Claude: Done! I'll remind you every Monday at 9am.
 ```
 User: @Andy at 5pm today, send me a summary of today's emails
 
-Claude: [calls mcp__motherclaw__schedule_task]
+Claude: [calls mcp__claudeclaw__schedule_task]
         {
           "prompt": "Search for today's emails, summarize the important ones, and send the summary to the group.",
           "schedule_type": "once",
@@ -619,9 +619,9 @@ From main channel:
 
 ## MCP Servers
 
-### MotherClaw MCP (built-in)
+### ClaudeClaw MCP (built-in)
 
-The `motherclaw` MCP server is created dynamically per agent call with the current group's context.
+The `claudeclaw` MCP server is created dynamically per agent call with the current group's context.
 
 **Available Tools:**
 | Tool | Purpose |
@@ -639,12 +639,12 @@ The `motherclaw` MCP server is created dynamically per agent call with the curre
 
 ## Deployment
 
-MotherClaw runs as a single macOS launchd service.
+ClaudeClaw runs as a single macOS launchd service.
 
 ### Startup Sequence
 
-When MotherClaw starts, it:
-1. **Ensures container runtime is running** - Automatically starts it if needed; kills orphaned MotherClaw containers from previous runs
+When ClaudeClaw starts, it:
+1. **Ensures container runtime is running** - Automatically starts it if needed; kills orphaned ClaudeClaw containers from previous runs
 2. Initializes the SQLite database (migrates from JSON files if they exist)
 3. Loads state from SQLite (registered groups, sessions, router state)
 4. **Connects channels** — loops through registered channels, instantiates those with credentials, calls `connect()` on each
@@ -655,16 +655,16 @@ When MotherClaw starts, it:
    - Recovers any unprocessed messages from before shutdown
    - Starts the message polling loop
 
-### Service: com.motherclaw
+### Service: com.claudeclaw
 
-**launchd/com.motherclaw.plist:**
+**launchd/com.claudeclaw.plist:**
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "...">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.motherclaw</string>
+    <string>com.claudeclaw</string>
     <key>ProgramArguments</key>
     <array>
         <string>{{NODE_PATH}}</string>
@@ -686,9 +686,9 @@ When MotherClaw starts, it:
         <string>Andy</string>
     </dict>
     <key>StandardOutPath</key>
-    <string>{{PROJECT_ROOT}}/logs/motherclaw.log</string>
+    <string>{{PROJECT_ROOT}}/logs/claudeclaw.log</string>
     <key>StandardErrorPath</key>
-    <string>{{PROJECT_ROOT}}/logs/motherclaw.error.log</string>
+    <string>{{PROJECT_ROOT}}/logs/claudeclaw.error.log</string>
 </dict>
 </plist>
 ```
@@ -697,19 +697,19 @@ When MotherClaw starts, it:
 
 ```bash
 # Install service
-cp launchd/com.motherclaw.plist ~/Library/LaunchAgents/
+cp launchd/com.claudeclaw.plist ~/Library/LaunchAgents/
 
 # Start service
-launchctl load ~/Library/LaunchAgents/com.motherclaw.plist
+launchctl load ~/Library/LaunchAgents/com.claudeclaw.plist
 
 # Stop service
-launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist
+launchctl unload ~/Library/LaunchAgents/com.claudeclaw.plist
 
 # Check status
-launchctl list | grep motherclaw
+launchctl list | grep claudeclaw
 
 # View logs
-tail -f logs/motherclaw.log
+tail -f logs/claudeclaw.log
 ```
 
 ---
@@ -765,8 +765,8 @@ chmod 700 groups/
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| No response to messages | Service not running | Check `launchctl list | grep motherclaw` |
-| "Claude Code process exited with code 1" | Container runtime failed to start | Check logs; MotherClaw auto-starts container runtime but may fail |
+| No response to messages | Service not running | Check `launchctl list | grep claudeclaw` |
+| "Claude Code process exited with code 1" | Container runtime failed to start | Check logs; ClaudeClaw auto-starts container runtime but may fail |
 | "Claude Code process exited with code 1" | Session mount path wrong | Ensure mount is to `/home/node/.claude/` not `/root/.claude/` |
 | Session not continuing | Session ID not saved | Check SQLite: `sqlite3 store/messages.db "SELECT * FROM sessions"` |
 | Session not continuing | Mount path mismatch | Container user is `node` with HOME=/home/node; sessions must be at `/home/node/.claude/` |
@@ -775,8 +775,8 @@ chmod 700 groups/
 
 ### Log Location
 
-- `logs/motherclaw.log` - stdout
-- `logs/motherclaw.error.log` - stderr
+- `logs/claudeclaw.log` - stdout
+- `logs/claudeclaw.error.log` - stderr
 
 ### Debug Mode
 

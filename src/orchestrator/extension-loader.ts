@@ -1,6 +1,6 @@
 /**
- * Extension loader for MotherClaw.
- * Scans extensions/motherclaw-* for manifest.json files,
+ * Extension loader for ClaudeClaw.
+ * Scans extensions/claudeclaw-* for manifest.json files,
  * validates them, and dynamically imports their entry points.
  * Extensions self-register via registerChannel() or registerExtension() on import.
  */
@@ -10,7 +10,7 @@ import { pathToFileURL } from 'url';
 import { logger } from './logger.js';
 import { validateManifest, type ExtensionManifest, type LoadResult } from './extension-manifest.js';
 
-// CODE_ROOT is where the MotherClaw code lives (for finding extensions/)
+// CODE_ROOT is where the ClaudeClaw code lives (for finding extensions/)
 // In dev mode: process.cwd()
 // In plugin mode: resolved from import.meta.url (the dist/ directory's parent)
 function getCodeRoot(): string {
@@ -32,7 +32,7 @@ export async function loadExtensions(): Promise<LoadResult[]> {
 
   const entries = fs.readdirSync(extensionsDir, { withFileTypes: true });
   const extensionDirs = entries
-    .filter(e => e.isDirectory() && e.name.startsWith('motherclaw-'))
+    .filter(e => e.isDirectory() && e.name.startsWith('claudeclaw-'))
     .map(e => e.name)
     .sort();
 

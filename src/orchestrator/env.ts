@@ -10,10 +10,10 @@ import { logger } from './logger.js';
  */
 /**
  * Resolve the .env file path.
- * Priority: MOTHERCLAW_ENV_FILE > cwd/.env
+ * Priority: CLAUDECLAW_ENV_FILE > cwd/.env
  */
 function resolveEnvPath(): string {
-  if (process.env.MOTHERCLAW_ENV_FILE) return process.env.MOTHERCLAW_ENV_FILE;
+  if (process.env.CLAUDECLAW_ENV_FILE) return process.env.CLAUDECLAW_ENV_FILE;
   return path.join(process.cwd(), '.env');
 }
 

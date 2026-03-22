@@ -1,11 +1,11 @@
 ---
 name: add-gmail
-description: Add Gmail integration to MotherClaw. Can be configured as a tool (agent reads/sends emails when triggered from WhatsApp) or as a full channel (emails can trigger the agent, schedule tasks, and receive replies). Guides through GCP OAuth setup and implements the integration.
+description: Add Gmail integration to ClaudeClaw. Can be configured as a tool (agent reads/sends emails when triggered from WhatsApp) or as a full channel (emails can trigger the agent, schedule tasks, and receive replies). Guides through GCP OAuth setup and implements the integration.
 ---
 
 # Add Gmail Integration
 
-This skill adds Gmail support to MotherClaw — either as a tool (read, send, search, draft) or as a full channel that polls the inbox.
+This skill adds Gmail support to ClaudeClaw — either as a tool (read, send, search, draft) or as a full channel that polls the inbox.
 
 ## Phase 1: Pre-flight
 
@@ -33,7 +33,7 @@ git remote -v
 If `gmail` is missing, add it:
 
 ```bash
-git remote add gmail https://github.com/qwibitai/motherclaw-gmail.git
+git remote add gmail https://github.com/qwibitai/claudeclaw-gmail.git
 ```
 
 ### Merge the skill branch
@@ -97,7 +97,7 @@ Tell the user:
 > 2. Go to **APIs & Services > Library**, search "Gmail API", click **Enable**
 > 3. Go to **APIs & Services > Credentials**, click **+ CREATE CREDENTIALS > OAuth client ID**
 >    - If prompted for consent screen: choose "External", fill in app name and email, save
->    - Application type: **Desktop app**, name: anything (e.g., "MotherClaw Gmail")
+>    - Application type: **Desktop app**, name: anything (e.g., "ClaudeClaw Gmail")
 > 4. Click **DOWNLOAD JSON** and save as `gcp-oauth.keys.json`
 >
 > Where did you save the file? (Give me the full path, or paste the file contents here)
@@ -139,14 +139,14 @@ Rebuild the container (agent-runner changed):
 cd container && ./build.sh
 ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 Then compile and restart:
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 ## Phase 4: Verify
@@ -161,14 +161,14 @@ Tell the user:
 
 ### Test channel mode (Channel mode only)
 
-Tell the user to send themselves a test email. The agent should pick it up within a minute. Monitor: `tail -f logs/motherclaw.log | grep -iE "(gmail|email)"`.
+Tell the user to send themselves a test email. The agent should pick it up within a minute. Monitor: `tail -f logs/claudeclaw.log | grep -iE "(gmail|email)"`.
 
 Once verified, offer filter customization via `AskUserQuestion` — by default, only emails in the Primary inbox trigger the agent (Promotions, Social, Updates, and Forums are excluded). The user can keep this default or narrow further by sender, label, or keywords. No code changes needed for filters.
 
 ### Check logs if needed
 
 ```bash
-tail -f logs/motherclaw.log
+tail -f logs/claudeclaw.log
 ```
 
 ## Troubleshooting
@@ -208,7 +208,7 @@ npx -y @gongrzhe/server-gmail-autoauth-mcp
 2. Remove `gmail` MCP server and `mcp__gmail__*` from `agent/runner/src/index.ts`
 3. Rebuild and restart
 4. Clear stale agent-runner copies: `rm -r data/sessions/*/agent-runner-src 2>/dev/null || true`
-5. Rebuild: `cd container && ./build.sh && cd .. && npm run build && launchctl kickstart -k gui/$(id -u)/com.motherclaw` (macOS) or `systemctl --user restart motherclaw` (Linux)
+5. Rebuild: `cd container && ./build.sh && cd .. && npm run build && launchctl kickstart -k gui/$(id -u)/com.claudeclaw` (macOS) or `systemctl --user restart claudeclaw` (Linux)
 
 ### Channel mode
 
@@ -219,4 +219,4 @@ npx -y @gongrzhe/server-gmail-autoauth-mcp
 5. Uninstall: `npm uninstall googleapis`
 6. Rebuild and restart
 7. Clear stale agent-runner copies: `rm -r data/sessions/*/agent-runner-src 2>/dev/null || true`
-8. Rebuild: `cd container && ./build.sh && cd .. && npm run build && launchctl kickstart -k gui/$(id -u)/com.motherclaw` (macOS) or `systemctl --user restart motherclaw` (Linux)
+8. Rebuild: `cd container && ./build.sh && cd .. && npm run build && launchctl kickstart -k gui/$(id -u)/com.claudeclaw` (macOS) or `systemctl --user restart claudeclaw` (Linux)

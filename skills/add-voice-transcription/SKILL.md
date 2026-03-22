@@ -1,11 +1,11 @@
 ---
 name: add-voice-transcription
-description: Add voice message transcription to MotherClaw using OpenAI's Whisper API. Automatically transcribes WhatsApp voice notes so the agent can read and respond to them.
+description: Add voice message transcription to ClaudeClaw using OpenAI's Whisper API. Automatically transcribes WhatsApp voice notes so the agent can read and respond to them.
 ---
 
 # Add Voice Transcription
 
-This skill adds automatic voice message transcription to MotherClaw's WhatsApp channel using OpenAI's Whisper API. When a voice note arrives, it is downloaded, transcribed, and delivered to the agent as `[Voice: <transcript>]`.
+This skill adds automatic voice message transcription to ClaudeClaw's WhatsApp channel using OpenAI's Whisper API. When a voice note arrives, it is downloaded, transcribed, and delivered to the agent as `[Voice: <transcript>]`.
 
 ## Phase 1: Pre-flight
 
@@ -34,7 +34,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/motherclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/claudeclaw-whatsapp.git
 ```
 
 ### Merge the skill branch
@@ -77,7 +77,7 @@ If the user doesn't have an API key:
 >
 > 1. Go to https://platform.openai.com/api-keys
 > 2. Click "Create new secret key"
-> 3. Give it a name (e.g., "MotherClaw Transcription")
+> 3. Give it a name (e.g., "ClaudeClaw Transcription")
 > 4. Copy the key (starts with `sk-`)
 >
 > Cost: ~$0.006 per minute of audio (~$0.003 per typical 30-second voice note)
@@ -100,14 +100,14 @@ mkdir -p data/env && cp .env data/env/env
 
 The container reads environment from `data/env/env`, not `.env` directly.
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ### Build and restart
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 ## Phase 4: Verify
@@ -121,7 +121,7 @@ Tell the user:
 ### Check logs if needed
 
 ```bash
-tail -f logs/motherclaw.log | grep -i voice
+tail -f logs/claudeclaw.log | grep -i voice
 ```
 
 Look for:

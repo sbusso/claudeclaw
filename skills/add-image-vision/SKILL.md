@@ -1,11 +1,11 @@
 ---
 name: add-image-vision
-description: Add image vision to MotherClaw agents. Resizes and processes WhatsApp image attachments, then sends them to Claude as multimodal content blocks.
+description: Add image vision to ClaudeClaw agents. Resizes and processes WhatsApp image attachments, then sends them to Claude as multimodal content blocks.
 ---
 
 # Image Vision Skill
 
-Adds the ability for MotherClaw agents to see and understand images sent via WhatsApp. Images are downloaded, resized with sharp, saved to the group workspace, and passed to the agent as base64-encoded multimodal content blocks.
+Adds the ability for ClaudeClaw agents to see and understand images sent via WhatsApp. Images are downloaded, resized with sharp, saved to the group workspace, and passed to the agent as base64-encoded multimodal content blocks.
 
 ## Phase 1: Pre-flight
 
@@ -25,7 +25,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/motherclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/claudeclaw-whatsapp.git
 ```
 
 ### Merge the skill branch
@@ -73,11 +73,11 @@ All tests must pass and build must be clean before proceeding.
    done
    ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 3. Restart the service:
    ```bash
-   launchctl kickstart -k gui/$(id -u)/com.motherclaw
+   launchctl kickstart -k gui/$(id -u)/com.claudeclaw
    ```
 
 ## Phase 4: Verify

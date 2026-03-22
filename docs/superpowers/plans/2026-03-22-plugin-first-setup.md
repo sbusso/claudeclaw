@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make MotherClaw work as a Claude Code plugin where `/setup` adapts to plugin mode (CLAUDE_PLUGIN_DATA) vs developer mode (cloned repo).
+**Goal:** Make ClaudeClaw work as a Claude Code plugin where `/setup` adapts to plugin mode (CLAUDE_PLUGIN_DATA) vs developer mode (cloned repo).
 
 **Architecture:** Add `STATE_ROOT` to config.ts that resolves from `CLAUDE_PLUGIN_DATA` or falls back to `PROJECT_ROOT`. Update `env.ts` to read `.env` from the correct location. Update `setup/service.ts` to pass plugin env vars in generated plist/systemd. Update the setup skill to detect mode and skip git operations in plugin mode.
 
@@ -71,7 +71,7 @@ describe('config path resolution', () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run src/orchestrator/config.test.ts`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run src/orchestrator/config.test.ts`
 Expected: FAIL — `GROUPS_DIR` and `LOG_DIR` don't resolve from `CLAUDE_PLUGIN_DATA`
 
 - [ ] **Step 3: Implement STATE_ROOT in config.ts**
@@ -102,12 +102,12 @@ export const DATA_DIR = path.resolve(PROJECT_ROOT, 'data');
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run src/orchestrator/config.test.ts`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run src/orchestrator/config.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: Run full test suite for regressions**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run`
 Expected: All tests pass (GROUPS_DIR is used by group-folder.ts, db.ts — verify no breakage)
 
 - [ ] **Step 6: Commit**
@@ -145,10 +145,10 @@ describe('readEnvFile', () => {
     process.env = originalEnv;
   });
 
-  it('reads from MOTHERCLAW_ENV_FILE when set', async () => {
-    const tmpEnv = path.join(process.env.TMPDIR || '/tmp', 'test-motherclaw.env');
+  it('reads from CLAUDECLAW_ENV_FILE when set', async () => {
+    const tmpEnv = path.join(process.env.TMPDIR || '/tmp', 'test-claudeclaw.env');
     fs.writeFileSync(tmpEnv, 'TEST_KEY=from_env_file\n');
-    process.env.MOTHERCLAW_ENV_FILE = tmpEnv;
+    process.env.CLAUDECLAW_ENV_FILE = tmpEnv;
 
     const { readEnvFile } = await import('./env.js');
     const result = readEnvFile(['TEST_KEY']);
@@ -174,8 +174,8 @@ describe('readEnvFile', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run src/orchestrator/env.test.ts`
-Expected: FAIL — readEnvFile ignores MOTHERCLAW_ENV_FILE and CLAUDE_PLUGIN_DATA
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run src/orchestrator/env.test.ts`
+Expected: FAIL — readEnvFile ignores CLAUDECLAW_ENV_FILE and CLAUDE_PLUGIN_DATA
 
 - [ ] **Step 3: Update readEnvFile in env.ts**
 
@@ -186,25 +186,25 @@ In `src/orchestrator/env.ts`, replace line 12:
 const envFile = path.join(process.cwd(), '.env');
 
 // After:
-const envFile = process.env.MOTHERCLAW_ENV_FILE
+const envFile = process.env.CLAUDECLAW_ENV_FILE
   || path.join(process.env.CLAUDE_PLUGIN_DATA || process.cwd(), '.env');
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run src/orchestrator/env.test.ts`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run src/orchestrator/env.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: Run full test suite**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run`
 Expected: All pass
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/orchestrator/env.ts src/orchestrator/env.test.ts
-git commit -m "feat: readEnvFile checks MOTHERCLAW_ENV_FILE and CLAUDE_PLUGIN_DATA"
+git commit -m "feat: readEnvFile checks CLAUDECLAW_ENV_FILE and CLAUDE_PLUGIN_DATA"
 ```
 
 ---
@@ -224,56 +224,56 @@ describe('plugin-mode plist generation', () => {
   it('includes CLAUDE_PLUGIN_DATA env var', () => {
     const plist = generatePluginPlist(
       '/usr/local/bin/node',
-      '/Users/user/.claude/plugins/motherclaw',
+      '/Users/user/.claude/plugins/claudeclaw',
       '/Users/user',
-      '/Users/user/Library/Application Support/Claude/plugin-data/motherclaw',
+      '/Users/user/Library/Application Support/Claude/plugin-data/claudeclaw',
     );
     expect(plist).toContain('CLAUDE_PLUGIN_DATA');
-    expect(plist).toContain('plugin-data/motherclaw');
+    expect(plist).toContain('plugin-data/claudeclaw');
   });
 
-  it('includes MOTHERCLAW_ENV_FILE env var', () => {
+  it('includes CLAUDECLAW_ENV_FILE env var', () => {
     const plist = generatePluginPlist(
       '/usr/local/bin/node',
-      '/Users/user/.claude/plugins/motherclaw',
+      '/Users/user/.claude/plugins/claudeclaw',
       '/Users/user',
-      '/Users/user/Library/Application Support/Claude/plugin-data/motherclaw',
+      '/Users/user/Library/Application Support/Claude/plugin-data/claudeclaw',
     );
-    expect(plist).toContain('MOTHERCLAW_ENV_FILE');
+    expect(plist).toContain('CLAUDECLAW_ENV_FILE');
   });
 
   it('includes /opt/homebrew/bin in PATH', () => {
     const plist = generatePluginPlist(
       '/usr/local/bin/node',
-      '/Users/user/.claude/plugins/motherclaw',
+      '/Users/user/.claude/plugins/claudeclaw',
       '/Users/user',
-      '/Users/user/Library/Application Support/Claude/plugin-data/motherclaw',
+      '/Users/user/Library/Application Support/Claude/plugin-data/claudeclaw',
     );
     expect(plist).toContain('/opt/homebrew/bin');
   });
 
   it('sets log paths to CLAUDE_PLUGIN_DATA/logs/', () => {
-    const pluginData = '/Users/user/Library/Application Support/Claude/plugin-data/motherclaw';
+    const pluginData = '/Users/user/Library/Application Support/Claude/plugin-data/claudeclaw';
     const plist = generatePluginPlist(
       '/usr/local/bin/node',
-      '/Users/user/.claude/plugins/motherclaw',
+      '/Users/user/.claude/plugins/claudeclaw',
       '/Users/user',
       pluginData,
     );
-    expect(plist).toContain(`${pluginData}/logs/motherclaw.log`);
+    expect(plist).toContain(`${pluginData}/logs/claudeclaw.log`);
   });
 });
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run setup/service.test.ts`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run setup/service.test.ts`
 Expected: FAIL — `generatePluginPlist` does not exist
 
 - [ ] **Step 3: Refactor service.ts to accept optional pluginDataDir**
 
 Add a `pluginDataDir` parameter to `setupLaunchd` and `setupSystemd`. When provided:
-- Add `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_ENV_FILE` to environment variables
+- Add `CLAUDE_PLUGIN_DATA` and `CLAUDECLAW_ENV_FILE` to environment variables
 - Log paths point to `pluginDataDir/logs/` instead of `projectRoot/logs/`
 - PATH includes `/opt/homebrew/bin`
 
@@ -294,7 +294,7 @@ function setupLaunchd(
         <string>${homeDir}</string>
         <key>CLAUDE_PLUGIN_DATA</key>
         <string>${pluginDataDir}</string>
-        <key>MOTHERCLAW_ENV_FILE</key>
+        <key>CLAUDECLAW_ENV_FILE</key>
         <string>${pluginDataDir}/.env</string>`
     : `        <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin</string>
@@ -322,12 +322,12 @@ Mirror the new plist structure in the test helper. Ensure existing tests still p
 
 - [ ] **Step 6: Run tests**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run setup/service.test.ts`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run setup/service.test.ts`
 Expected: All pass (old + new)
 
 - [ ] **Step 7: Run full test suite**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && npx vitest run`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && npx vitest run`
 Expected: All pass
 
 - [ ] **Step 8: Commit**
@@ -358,7 +358,7 @@ Run:
 
 **If CLAUDE_PLUGIN_DATA is set → Plugin mode:**
 - Skip step 0 (Git & Fork) entirely
-- Print: "Running as MotherClaw plugin. State stored in $CLAUDE_PLUGIN_DATA"
+- Print: "Running as ClaudeClaw plugin. State stored in $CLAUDE_PLUGIN_DATA"
 - Ensure state directories exist: `mkdir -p $CLAUDE_PLUGIN_DATA/{store,groups,logs}`
 - All subsequent steps use CLAUDE_PLUGIN_DATA for state paths
 
@@ -418,14 +418,14 @@ If "Fork to developer mode" chosen, run the migration flow below.
 ```markdown
 ## Migration: Plugin → Developer Mode
 
-1. AskUserQuestion: "Fork sbusso/motherclaw on GitHub first. What's your GitHub username?"
+1. AskUserQuestion: "Fork sbusso/claudeclaw on GitHub first. What's your GitHub username?"
 2. Stop service: detect platform, run appropriate unload/stop command
-3. Clone: `git clone https://github.com/<username>/motherclaw.git ~/Code/motherclaw` (ask for preferred path)
+3. Clone: `git clone https://github.com/<username>/claudeclaw.git ~/Code/claudeclaw` (ask for preferred path)
 4. Copy state: `cp -r $CLAUDE_PLUGIN_DATA/{store,groups,.env} <clone-path>/`
 5. Copy logs (optional): AskUserQuestion: "Copy logs too?"
 6. Clear sessions: `sqlite3 <clone-path>/store/messages.db "DELETE FROM sessions"`
 7. Install and build: `cd <clone-path> && npm install && npm run build`
-8. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/motherclaw.git`
+8. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/claudeclaw.git`
 9. Run service setup: `npx tsx setup/index.ts --step service`
 10. Print: "Migration complete. Run `cd <clone-path> && claude` to use developer mode. Remove --plugin-dir from your Claude Code invocation."
 ```
@@ -451,12 +451,12 @@ After the "Entry Points" section:
 ```markdown
 ## Modes
 
-MotherClaw runs in two modes, detected by `CLAUDE_PLUGIN_DATA`:
+ClaudeClaw runs in two modes, detected by `CLAUDE_PLUGIN_DATA`:
 
 **Plugin mode** (`CLAUDE_PLUGIN_DATA` set):
-- Loaded via `claude --plugin-dir /path/to/motherclaw`
+- Loaded via `claude --plugin-dir /path/to/claudeclaw`
 - State in `CLAUDE_PLUGIN_DATA` (store/, groups/, logs/, .env)
-- Service plist/systemd passes `CLAUDE_PLUGIN_DATA` and `MOTHERCLAW_ENV_FILE`
+- Service plist/systemd passes `CLAUDE_PLUGIN_DATA` and `CLAUDECLAW_ENV_FILE`
 - No git operations, no self-improvement
 - Upgrade via `/customize` → fork + migrate
 
@@ -471,13 +471,13 @@ MotherClaw runs in two modes, detected by `CLAUDE_PLUGIN_DATA`:
 
 Run:
 ```bash
-cd /Users/sbusso/Code/dev/motherclaw && npm run build && npx vitest run
+cd /Users/sbusso/Code/dev/claudeclaw && npm run build && npx vitest run
 ```
 Expected: Build clean, all tests pass
 
 - [ ] **Step 3: Validate plugin**
 
-Run: `cd /Users/sbusso/Code/dev/motherclaw && claude plugin validate .`
+Run: `cd /Users/sbusso/Code/dev/claudeclaw && claude plugin validate .`
 Expected: Validation passed
 
 - [ ] **Step 4: Commit and push**

@@ -1,13 +1,13 @@
 ---
 name: x-integration
-description: X (Twitter) integration for MotherClaw. Post tweets, like, reply, retweet, and quote. Use for setup, testing, or troubleshooting X functionality. Triggers on "setup x", "x integration", "twitter", "post tweet", "tweet".
+description: X (Twitter) integration for ClaudeClaw. Post tweets, like, reply, retweet, and quote. Use for setup, testing, or troubleshooting X functionality. Triggers on "setup x", "x integration", "twitter", "post tweet", "tweet".
 ---
 
 # X (Twitter) Integration
 
 Browser automation for X interactions via WhatsApp.
 
-> **Compatibility:** MotherClaw v1.0.0. Directory structure may change in future versions.
+> **Compatibility:** ClaudeClaw v1.0.0. Directory structure may change in future versions.
 
 ## Features
 
@@ -23,7 +23,7 @@ Browser automation for X interactions via WhatsApp.
 
 Before using this skill, ensure:
 
-1. **MotherClaw is installed and running** - WhatsApp connected, service active
+1. **ClaudeClaw is installed and running** - WhatsApp connected, service active
 2. **Dependencies installed**:
    ```bash
    npm ls playwright dotenv-cli || npm install playwright dotenv-cli
@@ -36,7 +36,7 @@ Before using this skill, ensure:
    CHROME_PATH=/path/to/Google Chrome.app/Contents/MacOS/Google Chrome
    ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ## Quick Start
 
@@ -50,12 +50,12 @@ npx dotenv -e .env -- npx tsx .claude/skills/x-integration/scripts/setup.ts
 # Verify: Output shows "COPY .claude/skills/x-integration/agent.ts"
 
 # 3. Rebuild host and restart service
-# Service name: In developer mode use com.motherclaw / motherclaw.
-# Service name derived from directory name: com.motherclaw.<dirname> / motherclaw-<dirname>.
+# Service name: In developer mode use com.claudeclaw / claudeclaw.
+# Service name derived from directory name: com.claudeclaw.<dirname> / claudeclaw-<dirname>.
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
-# Verify: launchctl list | grep motherclaw (macOS) or systemctl --user status motherclaw (Linux)
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
+# Verify: launchctl list | grep claudeclaw (macOS) or systemctl --user status claudeclaw (Linux)
 ```
 
 ## Configuration
@@ -65,7 +65,7 @@ launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CHROME_PATH` | `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` | Chrome executable path |
-| `MOTHERCLAW_ROOT` | `process.cwd()` | Project root directory |
+| `CLAUDECLAW_ROOT` | `process.cwd()` | Project root directory |
 | `LOG_LEVEL` | `info` | Logging level (debug, info, warn, error) |
 
 Set in `.env` file (loaded via `dotenv-cli` at runtime):
@@ -109,7 +109,7 @@ Paths relative to project root:
 |------|---------|-----|
 | `data/x-browser-profile/` | Chrome profile with X session | Ignored |
 | `data/x-auth.json` | Auth state marker | Ignored |
-| `logs/motherclaw.log` | Service logs (contains X operation logs) | Ignored |
+| `logs/claudeclaw.log` | Service logs (contains X operation logs) | Ignored |
 
 ## Architecture
 
@@ -158,7 +158,7 @@ Paths relative to project root:
 
 ### Integration Points
 
-To integrate this skill into MotherClaw, make the following modifications:
+To integrate this skill into ClaudeClaw, make the following modifications:
 
 ---
 
@@ -237,7 +237,7 @@ COPY .claude/skills/x-integration/agent.ts ./src/skills/x-integration/
 
 ## Setup
 
-All paths below are relative to project root (`MOTHERCLAW_ROOT`).
+All paths below are relative to project root (`CLAUDECLAW_ROOT`).
 
 ### 1. Check Chrome Path
 
@@ -276,14 +276,14 @@ cat data/x-auth.json  # Should show {"authenticated": true, ...}
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 **Verify success:**
 ```bash
-launchctl list | grep motherclaw  # macOS — should show PID and exit code 0 or -
-# Linux: systemctl --user status motherclaw
+launchctl list | grep claudeclaw  # macOS — should show PID and exit code 0 or -
+# Linux: systemctl --user status claudeclaw
 ```
 
 ## Usage via WhatsApp
@@ -349,8 +349,8 @@ echo '{"content":"Test"}' | npx tsx .claude/skills/x-integration/scripts/post.ts
 
 ```bash
 npx dotenv -e .env -- npx tsx .claude/skills/x-integration/scripts/setup.ts
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 ### Browser Lock Files
@@ -367,10 +367,10 @@ rm -f data/x-browser-profile/SingletonCookie
 
 ```bash
 # Host logs (relative to project root)
-grep -i "x_post\|x_like\|x_reply\|handleXIpc" logs/motherclaw.log | tail -20
+grep -i "x_post\|x_like\|x_reply\|handleXIpc" logs/claudeclaw.log | tail -20
 
 # Script errors
-grep -i "error\|failed" logs/motherclaw.log | tail -20
+grep -i "error\|failed" logs/claudeclaw.log | tail -20
 ```
 
 ### Script Timeout
@@ -410,7 +410,7 @@ If MCP tools not found in container:
 ./docker/build.sh 2>&1 | grep -i skill
 
 # Check container has the file
-docker run motherclaw-agent ls -la /app/src/skills/
+docker run claudeclaw-agent ls -la /app/src/skills/
 ```
 
 ## Security

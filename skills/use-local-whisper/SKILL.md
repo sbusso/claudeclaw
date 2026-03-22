@@ -68,7 +68,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/motherclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/claudeclaw-whatsapp.git
 ```
 
 ### Merge the skill branch
@@ -94,26 +94,26 @@ npm run build
 
 ### Ensure launchd PATH includes Homebrew
 
-The MotherClaw launchd service runs with a restricted PATH. `whisper-cli` and `ffmpeg` are in `/opt/homebrew/bin/` (Apple Silicon) or `/usr/local/bin/` (Intel), which may not be in the plist's PATH.
+The ClaudeClaw launchd service runs with a restricted PATH. `whisper-cli` and `ffmpeg` are in `/opt/homebrew/bin/` (Apple Silicon) or `/usr/local/bin/` (Intel), which may not be in the plist's PATH.
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 Check the current PATH:
 ```bash
-grep -A1 'PATH' ~/Library/LaunchAgents/com.motherclaw.plist
+grep -A1 'PATH' ~/Library/LaunchAgents/com.claudeclaw.plist
 ```
 
 If `/opt/homebrew/bin` is missing, add it to the `<string>` value inside the `PATH` key in the plist. Then reload:
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist
-launchctl load ~/Library/LaunchAgents/com.motherclaw.plist
+launchctl unload ~/Library/LaunchAgents/com.claudeclaw.plist
+launchctl load ~/Library/LaunchAgents/com.claudeclaw.plist
 ```
 
 ### Build and restart
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw
 ```
 
 ### Test
@@ -123,7 +123,7 @@ Send a voice note in any registered group. The agent should receive it as `[Voic
 ### Check logs
 
 ```bash
-tail -f logs/motherclaw.log | grep -i -E "voice|transcri|whisper"
+tail -f logs/claudeclaw.log | grep -i -E "voice|transcri|whisper"
 ```
 
 Look for:

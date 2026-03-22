@@ -1,5 +1,5 @@
 /**
- * Extension system for MotherClaw.
+ * Extension system for ClaudeClaw.
  * Extensions register IPC handlers, startup hooks, DB schema,
  * container env vars, and routing hooks without modifying core files.
  */
@@ -39,7 +39,7 @@ export interface ExtensionHooks {
   postRoute?: (envelope: OutboundEnvelope) => void;
 }
 
-export interface MotherClawExtension {
+export interface ClaudeClawExtension {
   name: string;
   ipcHandlers?: Record<string, IpcHandler>;
   onStartup?: (deps: ExtensionStartupDeps) => void;
@@ -50,13 +50,13 @@ export interface MotherClawExtension {
   containerEnvKeys?: string[];
 }
 
-const extensions: MotherClawExtension[] = [];
+const extensions: ClaudeClawExtension[] = [];
 
-export function registerExtension(ext: MotherClawExtension): void {
+export function registerExtension(ext: ClaudeClawExtension): void {
   extensions.push(ext);
 }
 
-export function getExtensions(): readonly MotherClawExtension[] {
+export function getExtensions(): readonly ClaudeClawExtension[] {
   return extensions;
 }
 

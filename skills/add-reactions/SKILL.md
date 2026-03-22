@@ -5,7 +5,7 @@ description: Add WhatsApp emoji reaction support — receive, send, store, and s
 
 # Add Reactions
 
-This skill adds emoji reaction support to MotherClaw's WhatsApp channel: receive and store reactions, send reactions from the container agent via MCP tool, and query reaction history from SQLite.
+This skill adds emoji reaction support to ClaudeClaw's WhatsApp channel: receive and store reactions, send reactions from the container agent via MCP tool, and query reaction history from SQLite.
 
 ## Phase 1: Pre-flight
 
@@ -30,7 +30,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/motherclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/claudeclaw-whatsapp.git
 ```
 
 ### Merge the skill branch
@@ -74,16 +74,16 @@ All tests must pass and build must be clean before proceeding.
 npm run build
 ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 Linux:
 ```bash
-systemctl --user restart motherclaw
+systemctl --user restart claudeclaw
 ```
 
 macOS:
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw
 ```
 
 ### Test receiving reactions
@@ -104,7 +104,7 @@ Ask the agent to react to a message via the `react_to_message` MCP tool. Check y
 
 ### Reactions not appearing in database
 
-- Check MotherClaw logs for `Failed to process reaction` errors
+- Check ClaudeClaw logs for `Failed to process reaction` errors
 - Verify the chat is registered
 - Confirm the service is running
 

@@ -14,7 +14,7 @@ const envConfig = readEnvFile([
 ]);
 
 export const ASSISTANT_NAME =
-  process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'MotherClaw';
+  process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'ClaudeClaw';
 export const ASSISTANT_HAS_OWN_NUMBER =
   (process.env.ASSISTANT_HAS_OWN_NUMBER ||
     envConfig.ASSISTANT_HAS_OWN_NUMBER) === 'true';
@@ -27,16 +27,16 @@ const HOME_DIR = process.env.HOME || os.homedir();
 export const MOUNT_ALLOWLIST_PATH = path.join(
   HOME_DIR,
   '.config',
-  'motherclaw',
+  'claudeclaw',
   'mount-allowlist.json',
 );
 export const SENDER_ALLOWLIST_PATH = path.join(
   HOME_DIR,
   '.config',
-  'motherclaw',
+  'claudeclaw',
   'sender-allowlist.json',
 );
-// Code root: where the motherclaw source/dist lives.
+// Code root: where the claudeclaw source/dist lives.
 // Derived from this file's location: dist/orchestrator/config.js → ../../
 // In developer mode: same as STATE_ROOT.
 // In plugin mode: the plugin code directory (different from STATE_ROOT).
@@ -44,7 +44,7 @@ const thisDir = path.dirname(new URL(import.meta.url).pathname);
 export const CODE_ROOT = path.resolve(thisDir, '..', '..');
 
 // State lives in the current working directory — always.
-// In developer mode: cwd is the motherclaw repo.
+// In developer mode: cwd is the claudeclaw repo.
 // In plugin mode: cwd is whatever directory the user ran `claude` from.
 // The directory IS the instance. Multiple instances = multiple directories.
 export const STATE_ROOT = process.cwd();
@@ -55,7 +55,7 @@ export const LOG_DIR = path.resolve(STATE_ROOT, 'logs');
 export const DATA_DIR = path.resolve(STATE_ROOT, 'data');
 
 export const CONTAINER_IMAGE =
-  process.env.CONTAINER_IMAGE || 'motherclaw-agent:latest';
+  process.env.CONTAINER_IMAGE || 'claudeclaw-agent:latest';
 export const CONTAINER_TIMEOUT = parseInt(
   process.env.CONTAINER_TIMEOUT || '1800000',
   10,

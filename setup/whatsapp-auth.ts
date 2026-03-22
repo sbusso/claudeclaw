@@ -10,7 +10,7 @@ import { openBrowser, isHeadless } from './platform.js';
 import { emitStatus } from './status.js';
 
 const QR_AUTH_TEMPLATE = `<!DOCTYPE html>
-<html><head><title>MotherClaw - WhatsApp Auth</title>
+<html><head><title>ClaudeClaw - WhatsApp Auth</title>
 <meta http-equiv="refresh" content="3">
 <style>
   body { font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
@@ -28,7 +28,7 @@ const QR_AUTH_TEMPLATE = `<!DOCTYPE html>
   <div class="instructions">Settings \\u2192 Linked Devices \\u2192 Link a Device</div>
 </div>
 <script>
-  var startKey = 'motherclaw_qr_start';
+  var startKey = 'claudeclaw_qr_start';
   var start = localStorage.getItem(startKey);
   if (!start) { start = Date.now().toString(); localStorage.setItem(startKey, start); }
   var elapsed = Math.floor((Date.now() - parseInt(start)) / 1000);
@@ -45,7 +45,7 @@ const QR_AUTH_TEMPLATE = `<!DOCTYPE html>
 </script></body></html>`;
 
 const SUCCESS_HTML = `<!DOCTYPE html>
-<html><head><title>MotherClaw - Connected!</title>
+<html><head><title>ClaudeClaw - Connected!</title>
 <style>
   body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
   .card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
@@ -58,7 +58,7 @@ const SUCCESS_HTML = `<!DOCTYPE html>
   <h2>Connected to WhatsApp</h2>
   <p>You can close this tab.</p>
 </div>
-<script>localStorage.removeItem('motherclaw_qr_start');</script>
+<script>localStorage.removeItem('claudeclaw_qr_start');</script>
 </body></html>`;
 
 function parseArgs(args: string[]): { method: string; phone: string } {

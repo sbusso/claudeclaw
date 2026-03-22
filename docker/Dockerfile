@@ -1,4 +1,4 @@
-# MotherClaw Agent Container
+# ClaudeClaw Agent Container
 # Runs Claude Agent SDK in isolated Linux VM with browser automation
 
 FROM node:22-slim

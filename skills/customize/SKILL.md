@@ -1,9 +1,9 @@
 ---
 name: customize
-description: Add new capabilities or modify MotherClaw behavior. Use when user wants to add channels (Telegram, Slack, email input), change triggers, add integrations, modify the router, or make any other customizations. This is an interactive skill that asks questions to understand what the user wants.
+description: Add new capabilities or modify ClaudeClaw behavior. Use when user wants to add channels (Telegram, Slack, email input), change triggers, add integrations, modify the router, or make any other customizations. This is an interactive skill that asks questions to understand what the user wants.
 ---
 
-# MotherClaw Customization
+# ClaudeClaw Customization
 
 This skill helps users add capabilities or modify behavior. Use AskUserQuestion to understand what they want before making changes.
 
@@ -11,7 +11,7 @@ This skill helps users add capabilities or modify behavior. Use AskUserQuestion 
 
 Check if `.claude-plugin/plugin.json` exists in cwd:
 ```bash
-cat .claude-plugin/plugin.json 2>/dev/null | grep '"name": "motherclaw"' && echo "DEVELOPER_MODE" || echo "PLUGIN_MODE"
+cat .claude-plugin/plugin.json 2>/dev/null | grep '"name": "claudeclaw"' && echo "DEVELOPER_MODE" || echo "PLUGIN_MODE"
 ```
 
 If plugin mode, offer the user a choice via AskUserQuestion:
@@ -22,19 +22,19 @@ If "Fork to developer mode" is chosen, run the migration flow below. Otherwise, 
 
 ### Migration: Plugin → Developer Mode
 
-1. AskUserQuestion: "To customize MotherClaw fully, you need your own fork. First, fork sbusso/motherclaw on GitHub. What's your GitHub username?"
-2. AskUserQuestion: "Where should I clone the repo?" (default: `~/Code/motherclaw`)
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+1. AskUserQuestion: "To customize ClaudeClaw fully, you need your own fork. First, fork sbusso/claudeclaw on GitHub. What's your GitHub username?"
+2. AskUserQuestion: "Where should I clone the repo?" (default: `~/Code/claudeclaw`)
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 3. Stop running service (service name derived from current directory name):
-   - macOS: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.<dirname>.plist`
-   - Linux: `systemctl --user stop motherclaw-<dirname>`
-4. Clone: `git clone https://github.com/<username>/motherclaw.git <clone-path>`
+   - macOS: `launchctl unload ~/Library/LaunchAgents/com.claudeclaw.<dirname>.plist`
+   - Linux: `systemctl --user stop claudeclaw-<dirname>`
+4. Clone: `git clone https://github.com/<username>/claudeclaw.git <clone-path>`
 5. Copy state from current data directory: `cp -r store groups .env <clone-path>/`
 6. AskUserQuestion: "Copy logs too?" If yes: `cp -r logs <clone-path>/`
 7. Clear stale sessions: `sqlite3 <clone-path>/store/messages.db "DELETE FROM sessions"`
 8. Install and build: `cd <clone-path> && npm install && npm run build`
-9. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/motherclaw.git`
+9. Set up upstream: `cd <clone-path> && git remote add upstream https://github.com/sbusso/claudeclaw.git`
 10. Run service setup: `cd <clone-path> && npx tsx setup/index.ts --step service`
 11. Print: "Migration complete! Run `cd <clone-path> && claude` to use developer mode. Remove `--plugin-dir` from your Claude Code invocation."
 
@@ -124,10 +124,10 @@ Always tell the user:
 # Rebuild and restart
 npm run build
 # macOS:
-launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist
-launchctl load ~/Library/LaunchAgents/com.motherclaw.plist
+launchctl unload ~/Library/LaunchAgents/com.claudeclaw.plist
+launchctl load ~/Library/LaunchAgents/com.claudeclaw.plist
 # Linux:
-# systemctl --user restart motherclaw
+# systemctl --user restart claudeclaw
 ```
 
 ## Example Interaction

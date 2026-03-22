@@ -7,11 +7,11 @@ description: Add QMD (Query Markup Documents) as an advanced memory search backe
 
 QMD (https://github.com/tobi/qmd) is a local search engine for markdown files. It combines BM25 keyword search, vector semantic search, and LLM re-ranking — all running on-device via node-llama-cpp with GGUF models.
 
-This skill upgrades MotherClaw's built-in grep-based `memory_search` MCP tool with QMD's hybrid search, giving agents much better recall across large memory collections.
+This skill upgrades ClaudeClaw's built-in grep-based `memory_search` MCP tool with QMD's hybrid search, giving agents much better recall across large memory collections.
 
 ## Prerequisites
 
-- MotherClaw with memory tools already working (memory_search, memory_save, memory_get)
+- ClaudeClaw with memory tools already working (memory_search, memory_save, memory_get)
 - ~2GB disk space for GGUF embedding + reranking models (downloaded on first run)
 - Node.js 20+
 

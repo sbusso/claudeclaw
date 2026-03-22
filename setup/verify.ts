@@ -24,8 +24,8 @@ import { emitStatus } from './status.js';
 
 // Derive service label from data directory for instance-specific checks
 const SERVICE_DIR_NAME = path.basename(DATA_DIR).replace(/[^a-zA-Z0-9_-]/g, '-');
-const SERVICE_LABEL = `com.motherclaw.${SERVICE_DIR_NAME}`;
-const SYSTEMD_UNIT = `motherclaw-${SERVICE_DIR_NAME}`;
+const SERVICE_LABEL = `com.claudeclaw.${SERVICE_DIR_NAME}`;
+const SYSTEMD_UNIT = `claudeclaw-${SERVICE_DIR_NAME}`;
 
 export async function run(_args: string[]): Promise<void> {
   const projectRoot = process.cwd();
@@ -71,7 +71,7 @@ export async function run(_args: string[]): Promise<void> {
     }
   } else {
     // Check for nohup PID file
-    const pidFile = path.join(projectRoot, 'motherclaw.pid');
+    const pidFile = path.join(projectRoot, 'claudeclaw.pid');
     if (fs.existsSync(pidFile)) {
       try {
         const raw = fs.readFileSync(pidFile, 'utf-8').trim();
@@ -170,7 +170,7 @@ export async function run(_args: string[]): Promise<void> {
   let mountAllowlist = 'missing';
   if (
     fs.existsSync(
-      path.join(homeDir, '.config', 'motherclaw', 'mount-allowlist.json'),
+      path.join(homeDir, '.config', 'claudeclaw', 'mount-allowlist.json'),
     )
   ) {
     mountAllowlist = 'configured';

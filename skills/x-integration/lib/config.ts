@@ -8,7 +8,7 @@
 import path from 'path';
 
 // Project root - can be overridden for different deployments
-const PROJECT_ROOT = process.env.MOTHERCLAW_ROOT || process.cwd();
+const PROJECT_ROOT = process.env.CLAUDECLAW_ROOT || process.cwd();
 
 /**
  * Configuration object with all settings

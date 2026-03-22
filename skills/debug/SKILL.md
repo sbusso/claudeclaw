@@ -3,7 +3,7 @@ name: debug
 description: Debug container agent issues. Use when things aren't working, container fails, authentication problems, or to understand how the container system works. Covers logs, environment variables, mounts, and common issues.
 ---
 
-# MotherClaw Container & Sandbox Debugging
+# ClaudeClaw Container & Sandbox Debugging
 
 This guide covers debugging the agent execution system (container and sandbox runtimes).
 
@@ -30,8 +30,8 @@ src/orchestrator/container-runner.ts               agent/runner/
 
 | Log | Location | Content |
 |-----|----------|---------|
-| **Main app logs** | `logs/motherclaw.log` | Host-side WhatsApp, routing, container spawning |
-| **Main app errors** | `logs/motherclaw.error.log` | Host-side errors |
+| **Main app logs** | `logs/claudeclaw.log` | Host-side WhatsApp, routing, container spawning |
+| **Main app errors** | `logs/claudeclaw.error.log` | Host-side errors |
 | **Container run logs** | `groups/{folder}/logs/container-*.log` | Per-run: input, mounts, stderr, stdout |
 | **Claude sessions** | `~/.claude/projects/` | Claude Code session history |
 
@@ -90,7 +90,7 @@ To verify env vars are reaching the container:
 ```bash
 echo '{}' | docker run -i \
   -v $(pwd)/data/env:/workspace/env-dir:ro \
-  --entrypoint /bin/bash motherclaw-agent:latest \
+  --entrypoint /bin/bash claudeclaw-agent:latest \
   -c 'export $(cat /workspace/env-dir/env | xargs); echo "OAuth: ${#CLAUDE_CODE_OAUTH_TOKEN} chars, API: ${#ANTHROPIC_API_KEY} chars"'
 ```
 
@@ -109,7 +109,7 @@ echo '{}' | docker run -i \
 
 To check what's mounted inside a container:
 ```bash
-docker run --rm --entrypoint /bin/bash motherclaw-agent:latest -c 'ls -la /workspace/'
+docker run --rm --entrypoint /bin/bash claudeclaw-agent:latest -c 'ls -la /workspace/'
 ```
 
 Expected structure:
@@ -131,7 +131,7 @@ Expected structure:
 
 The container runs as user `node` (uid 1000). Check ownership:
 ```bash
-docker run --rm --entrypoint /bin/bash motherclaw-agent:latest -c '
+docker run --rm --entrypoint /bin/bash claudeclaw-agent:latest -c '
   whoami
   ls -la /workspace/
   ls -la /app/
@@ -156,7 +156,7 @@ grep -A3 "Claude sessions" src/orchestrator/container-runner.ts
 ```bash
 docker run --rm --entrypoint /bin/bash \
   -v ~/.claude:/home/node/.claude \
-  motherclaw-agent:latest -c '
+  claudeclaw-agent:latest -c '
 echo "HOME=$HOME"
 ls -la $HOME/.claude/projects/ 2>&1 | head -5
 '
@@ -189,14 +189,14 @@ echo '{"prompt":"What is 2+2?","groupFolder":"test","chatJid":"test@g.us","isMai
   -v $(pwd)/data/env:/workspace/env-dir:ro \
   -v $(pwd)/groups/test:/workspace/group \
   -v $(pwd)/data/ipc:/workspace/ipc \
-  motherclaw-agent:latest
+  claudeclaw-agent:latest
 ```
 
 ### Test Claude Code directly:
 ```bash
 docker run --rm --entrypoint /bin/bash \
   -v $(pwd)/data/env:/workspace/env-dir:ro \
-  motherclaw-agent:latest -c '
+  claudeclaw-agent:latest -c '
   export $(cat /workspace/env-dir/env | xargs)
   claude -p "Say hello" --dangerously-skip-permissions --allowedTools ""
 '
@@ -204,7 +204,7 @@ docker run --rm --entrypoint /bin/bash \
 
 ### Interactive shell in container:
 ```bash
-docker run --rm -it --entrypoint /bin/bash motherclaw-agent:latest
+docker run --rm -it --entrypoint /bin/bash claudeclaw-agent:latest
 ```
 
 ## SDK Options Reference
@@ -248,7 +248,7 @@ docker builder prune -af
 docker images
 
 # Check what's in the image
-docker run --rm --entrypoint /bin/bash motherclaw-agent:latest -c '
+docker run --rm --entrypoint /bin/bash claudeclaw-agent:latest -c '
   echo "=== Node version ==="
   node --version
 
@@ -278,13 +278,13 @@ rm -rf data/sessions/
 # Clear sessions for a specific group
 rm -rf data/sessions/{groupFolder}/.claude/
 
-# Also clear the session ID from MotherClaw's tracking (stored in SQLite)
+# Also clear the session ID from ClaudeClaw's tracking (stored in SQLite)
 sqlite3 store/messages.db "DELETE FROM sessions WHERE group_folder = '{groupFolder}'"
 ```
 
 To verify session resumption is working, check the logs for the same session ID across messages:
 ```bash
-grep "Session initialized" logs/motherclaw.log | tail -5
+grep "Session initialized" logs/claudeclaw.log | tail -5
 # Should show the SAME session ID for consecutive messages in the same group
 ```
 
@@ -329,11 +329,11 @@ src/orchestrator/sandbox-runner.ts
     │ spawns sandboxed process via srt CLI
     │ with kernel-enforced filesystem/network
     │
-    ├── MOTHERCLAW_GROUP_DIR → groups/{folder}
-    ├── MOTHERCLAW_IPC_DIR → data/ipc/{folder}
-    ├── MOTHERCLAW_PROJECT_DIR → project root (read-only)
-    ├── MOTHERCLAW_GLOBAL_DIR → groups/global (read-only)
-    └── MOTHERCLAW_EXTRA_DIR → additional mounts
+    ├── CLAUDECLAW_GROUP_DIR → groups/{folder}
+    ├── CLAUDECLAW_IPC_DIR → data/ipc/{folder}
+    ├── CLAUDECLAW_PROJECT_DIR → project root (read-only)
+    ├── CLAUDECLAW_GLOBAL_DIR → groups/global (read-only)
+    └── CLAUDECLAW_EXTRA_DIR → additional mounts
 ```
 
 ### Sandbox-Specific Issues
@@ -342,7 +342,7 @@ src/orchestrator/sandbox-runner.ts
 
 **Agent runner won't start (tsx/EPERM):** Sandbox blocks Unix sockets needed by `tsx`. Fix: pre-compile with `cd agent/runner && npx tsc`, run with plain `node`.
 
-**Agent can't find paths:** Check that `MOTHERCLAW_*_DIR` env vars are set in `sandbox-runner.ts`. The agent runner falls back to `/workspace/*` if env vars are missing.
+**Agent can't find paths:** Check that `CLAUDECLAW_*_DIR` env vars are set in `sandbox-runner.ts`. The agent runner falls back to `/workspace/*` if env vars are missing.
 
 **Stale sessions after runtime switch:** Switching a group between container and sandbox leaves stale session IDs. Fix: `sqlite3 store/messages.db "DELETE FROM sessions"`
 
@@ -355,7 +355,7 @@ src/orchestrator/sandbox-runner.ts
 Run this to check common issues:
 
 ```bash
-echo "=== Checking MotherClaw Agent Setup ==="
+echo "=== Checking ClaudeClaw Agent Setup ==="
 
 echo -e "\n1. Authentication configured?"
 [ -f .env ] && (grep -q "CLAUDE_CODE_OAUTH_TOKEN=sk-" .env || grep -q "ANTHROPIC_API_KEY=sk-" .env) && echo "OK" || echo "MISSING - add CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY to .env"
@@ -367,7 +367,7 @@ echo -e "\n3. Container runtime running?"
 docker info &>/dev/null && echo "OK" || echo "NOT RUNNING - start Docker Desktop (macOS) or sudo systemctl start docker (Linux)"
 
 echo -e "\n4. Container image exists?"
-echo '{}' | docker run -i --entrypoint /bin/echo motherclaw-agent:latest "OK" 2>/dev/null || echo "MISSING - run ./docker/build.sh"
+echo '{}' | docker run -i --entrypoint /bin/echo claudeclaw-agent:latest "OK" 2>/dev/null || echo "MISSING - run ./docker/build.sh"
 
 echo -e "\n5. Session mount path correct?"
 grep -q "/home/node/.claude" src/orchestrator/container-runner.ts 2>/dev/null && echo "OK" || echo "WRONG - should mount to /home/node/.claude/, not /root/.claude/"
@@ -379,6 +379,6 @@ echo -e "\n7. Recent container logs?"
 ls -t groups/*/logs/container-*.log 2>/dev/null | head -3 || echo "No container logs yet"
 
 echo -e "\n8. Session continuity working?"
-SESSIONS=$(grep "Session initialized" logs/motherclaw.log 2>/dev/null | tail -5 | awk '{print $NF}' | sort -u | wc -l)
+SESSIONS=$(grep "Session initialized" logs/claudeclaw.log 2>/dev/null | tail -5 | awk '{print $NF}' | sort -u | wc -l)
 [ "$SESSIONS" -le 2 ] && echo "OK (recent sessions reusing IDs)" || echo "CHECK - multiple different session IDs, may indicate resumption issues"
 ```

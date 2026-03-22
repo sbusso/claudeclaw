@@ -5,7 +5,7 @@ description: Switch from Docker to Apple Container for macOS-native container is
 
 # Convert to Apple Container
 
-This skill switches MotherClaw's container runtime from Docker to Apple Container (macOS-only). It uses the skills engine for deterministic code changes, then walks through verification.
+This skill switches ClaudeClaw's container runtime from Docker to Apple Container (macOS-only). It uses the skills engine for deterministic code changes, then walks through verification.
 
 **What this changes:**
 - Container runtime binary: `docker` → `container`
@@ -58,7 +58,7 @@ git remote -v
 If `upstream` is missing, add it:
 
 ```bash
-git remote add upstream https://github.com/sbusso/motherclaw.git
+git remote add upstream https://github.com/sbusso/claudeclaw.git
 ```
 
 ### Merge the skill branch
@@ -103,7 +103,7 @@ container system status || container system start
 ### Test basic execution
 
 ```bash
-echo '{}' | container run -i --entrypoint /bin/echo motherclaw-agent:latest "Container OK"
+echo '{}' | container run -i --entrypoint /bin/echo claudeclaw-agent:latest "Container OK"
 ```
 
 ### Test readonly mounts
@@ -112,7 +112,7 @@ echo '{}' | container run -i --entrypoint /bin/echo motherclaw-agent:latest "Con
 mkdir -p /tmp/test-ro && echo "test" > /tmp/test-ro/file.txt
 container run --rm --entrypoint /bin/bash \
   --mount type=bind,source=/tmp/test-ro,target=/test,readonly \
-  motherclaw-agent:latest \
+  claudeclaw-agent:latest \
   -c "cat /test/file.txt && touch /test/new.txt 2>&1 || echo 'Write blocked (expected)'"
 rm -rf /tmp/test-ro
 ```
@@ -125,20 +125,20 @@ Expected: Read succeeds, write fails with "Read-only file system".
 mkdir -p /tmp/test-rw
 container run --rm --entrypoint /bin/bash \
   -v /tmp/test-rw:/test \
-  motherclaw-agent:latest \
+  claudeclaw-agent:latest \
   -c "echo 'test write' > /test/new.txt && cat /test/new.txt"
 cat /tmp/test-rw/new.txt && rm -rf /tmp/test-rw
 ```
 
 Expected: Both operations succeed.
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ### Full integration test
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw
 ```
 
 Send a message via WhatsApp and verify the agent responds.

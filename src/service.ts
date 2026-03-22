@@ -1,5 +1,5 @@
 /**
- * MotherClaw Service — Background orchestrator entry point.
+ * ClaudeClaw Service — Background orchestrator entry point.
  * Run by launchd (macOS) or systemd (Linux) as a persistent service.
  *
  * This is the process that polls for messages, spawns agents, and routes responses.

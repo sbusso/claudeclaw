@@ -5,7 +5,7 @@ description: Add WhatsApp as a channel. Can replace other channels entirely or r
 
 # Add WhatsApp Channel
 
-This skill adds WhatsApp support to MotherClaw. It installs the WhatsApp channel code, dependencies, and guides through authentication, registration, and configuration.
+This skill adds WhatsApp support to ClaudeClaw. It installs the WhatsApp channel code, dependencies, and guides through authentication, registration, and configuration.
 
 ## Phase 1: Pre-flight
 
@@ -55,7 +55,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/motherclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/claudeclaw-whatsapp.git
 ```
 
 ### Merge the skill branch
@@ -260,19 +260,19 @@ npx tsx setup/index.ts --step register \
 npm run build
 ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 Restart the service:
 
 ```bash
 # macOS (launchd)
-launchctl kickstart -k gui/$(id -u)/com.motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw
 
 # Linux (systemd)
-systemctl --user restart motherclaw
+systemctl --user restart claudeclaw
 
 # Linux (nohup fallback)
-bash start-motherclaw.sh
+bash start-claudeclaw.sh
 ```
 
 ### Test the connection
@@ -288,7 +288,7 @@ Tell the user:
 ### Check logs if needed
 
 ```bash
-tail -f logs/motherclaw.log
+tail -f logs/claudeclaw.log
 ```
 
 ## Troubleshooting
@@ -322,7 +322,7 @@ rm -rf store/auth/ && npx tsx setup/index.ts --step whatsapp-auth -- --method qr
 
 ### "conflict" disconnection
 
-This happens when two instances connect with the same credentials. Ensure only one MotherClaw process is running:
+This happens when two instances connect with the same credentials. Ensure only one ClaudeClaw process is running:
 
 ```bash
 pkill -f "node dist/service.js"
@@ -334,8 +334,8 @@ pkill -f "node dist/service.js"
 Check:
 1. Auth credentials exist: `ls store/auth/creds.json`
 3. Chat is registered: `sqlite3 store/messages.db "SELECT * FROM registered_groups WHERE jid LIKE '%whatsapp%' OR jid LIKE '%@g.us' OR jid LIKE '%@s.whatsapp.net'"`
-4. Service is running: `launchctl list | grep motherclaw` (macOS) or `systemctl --user status motherclaw` (Linux)
-5. Logs: `tail -50 logs/motherclaw.log`
+4. Service is running: `launchctl list | grep claudeclaw` (macOS) or `systemctl --user status claudeclaw` (Linux)
+5. Logs: `tail -50 logs/claudeclaw.log`
 
 ### Group names not showing
 
@@ -353,15 +353,15 @@ If running `npm run dev` while the service is active:
 
 ```bash
 # macOS:
-launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist
+launchctl unload ~/Library/LaunchAgents/com.claudeclaw.plist
 npm run dev
 # When done testing:
-launchctl load ~/Library/LaunchAgents/com.motherclaw.plist
+launchctl load ~/Library/LaunchAgents/com.claudeclaw.plist
 
 # Linux:
-# systemctl --user stop motherclaw
+# systemctl --user stop claudeclaw
 # npm run dev
-# systemctl --user start motherclaw
+# systemctl --user start claudeclaw
 ```
 
 ## Removal
@@ -371,4 +371,4 @@ To remove WhatsApp integration:
 1. Delete auth credentials: `rm -rf store/auth/`
 2. Remove WhatsApp registrations: `sqlite3 store/messages.db "DELETE FROM registered_groups WHERE jid LIKE '%@g.us' OR jid LIKE '%@s.whatsapp.net'"`
 3. Sync env: `mkdir -p data/env && cp .env data/env/env`
-4. Rebuild and restart: `npm run build && launchctl kickstart -k gui/$(id -u)/com.motherclaw` (macOS) or `npm run build && systemctl --user restart motherclaw` (Linux)
+4. Rebuild and restart: `npm run build && launchctl kickstart -k gui/$(id -u)/com.claudeclaw` (macOS) or `npm run build && systemctl --user restart claudeclaw` (Linux)

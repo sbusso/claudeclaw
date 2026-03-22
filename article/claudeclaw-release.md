@@ -1,14 +1,14 @@
 ---
-title: "MotherClaw: From NanoClaw Fork to Claude Code Plugin"
+title: "ClaudeClaw: From NanoClaw Fork to Claude Code Plugin"
 date: 2026-03-21
-tags: [motherclaw, nanoclaw, claude-code, plugin, agents, sandbox]
+tags: [claudeclaw, nanoclaw, claude-code, plugin, agents, sandbox]
 ---
 
-## What Is MotherClaw
+## What Is ClaudeClaw
 
-MotherClaw is a Claude Code plugin that turns Claude into a persistent, always-on agent orchestrator. It listens to messaging channels (Slack, WhatsApp, Telegram, Discord, Gmail), routes messages to isolated Claude agents, and manages conversations, memory, scheduled tasks, and webhooks — all from a single Node.js process.
+ClaudeClaw is a Claude Code plugin that turns Claude into a persistent, always-on agent orchestrator. It listens to messaging channels (Slack, WhatsApp, Telegram, Discord, Gmail), routes messages to isolated Claude agents, and manages conversations, memory, scheduled tasks, and webhooks — all from a single Node.js process.
 
-It started as a fork of [NanoClaw](https://github.com/qwibitai/nanoclaw), a minimal agent orchestrator. The fork diverged significantly: MotherClaw was rebuilt as a Claude Code plugin with a pluggable extension system, structured memory, webhook triggers, per-group agent configuration, cost tracking, and native sandbox runtime support.
+It started as a fork of [NanoClaw](https://github.com/qwibitai/nanoclaw), a minimal agent orchestrator. The fork diverged significantly: ClaudeClaw was rebuilt as a Claude Code plugin with a pluggable extension system, structured memory, webhook triggers, per-group agent configuration, cost tracking, and native sandbox runtime support.
 
 The entire codebase is ~10K lines of TypeScript across 126 files, with 386 tests. It fits in Claude's context window.
 
@@ -23,9 +23,9 @@ NanoClaw is a good minimal base — single process, SQLite, channels that self-r
 - **No cost visibility.** No tracking of token usage or estimated cost per run.
 - **No per-group agent config.** Every group uses the same model, tools, and behavior.
 
-MotherClaw addresses all of these.
+ClaudeClaw addresses all of these.
 
-## The Port: NanoClaw → MotherClaw
+## The Port: NanoClaw → ClaudeClaw
 
 The port was done in a single day. Here's what happened, commit by commit:
 
@@ -68,7 +68,7 @@ The security model inverts Docker's approach:
 - **Docker:** Protect credentials (proxy), allow network (full outbound)
 - **Sandbox:** Trust credentials (direct), restrict network (allowedDomains)
 
-The agent runner is runtime-agnostic — `MOTHERCLAW_*_DIR` env vars resolve paths, falling back to `/workspace/*` for container mode. Same binary, both runtimes.
+The agent runner is runtime-agnostic — `CLAUDECLAW_*_DIR` env vars resolve paths, falling back to `/workspace/*` for container mode. Same binary, both runtimes.
 
 ### Phase 3: Directory Reorganization
 
@@ -117,7 +117,7 @@ Recent Claude Code features (v2.1.76–81) were adopted:
 | autoMemoryDirectory | v2.1.80 | Unified SDK auto-memory + memory tools |
 | SendMessage auto-resume | v2.1.77 | Background agents auto-recover (zero code change) |
 
-## What MotherClaw Has Now
+## What ClaudeClaw Has Now
 
 ### Agent Triggers
 
@@ -147,7 +147,7 @@ Each group gets its own:
 /add-pdf-reader           /add-ollama-tool        /add-reactions
 /add-qmd                  /x-integration          /convert-to-apple-container
 /customize                /debug                  /setup
-/update-motherclaw        /update-skills          /get-qodo-rules
+/update-claudeclaw        /update-skills          /get-qodo-rules
 /qodo-pr-resolver
 ```
 
@@ -167,7 +167,7 @@ Each group gets its own:
 
 ### Longer-Term
 
-**TUI Dashboard Plugin.** A terminal UI for monitoring agent activity — running jobs, recent runs, cost by group, memory stats, webhook events. React-based using a library like [OpenTUI](https://github.com/nicepkg/opentui) or [Ink](https://github.com/vadimdemedes/ink). Could be a standalone Claude Code plugin that reads MotherClaw's SQLite database.
+**TUI Dashboard Plugin.** A terminal UI for monitoring agent activity — running jobs, recent runs, cost by group, memory stats, webhook events. React-based using a library like [OpenTUI](https://github.com/nicepkg/opentui) or [Ink](https://github.com/vadimdemedes/ink). Could be a standalone Claude Code plugin that reads ClaudeClaw's SQLite database.
 
 **Memory Graph.** Beyond flat files — relationships between memory entries. "This person mentioned that project in this conversation." QMD gets us search; a graph layer gets us traversal and connection discovery.
 
@@ -193,10 +193,10 @@ Each group gets its own:
 ## Try It
 
 ```bash
-git clone https://github.com/sbusso/motherclaw.git
-cd motherclaw
+git clone https://github.com/sbusso/claudeclaw.git
+cd claudeclaw
 claude
 # type: /setup
 ```
 
-The full source is at [github.com/sbusso/motherclaw](https://github.com/sbusso/motherclaw).
+The full source is at [github.com/sbusso/claudeclaw](https://github.com/sbusso/claudeclaw).

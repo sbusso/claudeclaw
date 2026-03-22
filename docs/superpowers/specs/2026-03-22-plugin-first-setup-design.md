@@ -2,14 +2,14 @@
 
 ## Context
 
-MotherClaw was ported from NanoClaw (a repo-first model where users clone and run `claude` inside the repo). As a Claude Code plugin loaded via `--plugin-dir`, the `/setup` skill fails immediately because step 0 tries to update a git repo — but in plugin mode there's no repo to update, just a plugin directory.
+ClaudeClaw was ported from NanoClaw (a repo-first model where users clone and run `claude` inside the repo). As a Claude Code plugin loaded via `--plugin-dir`, the `/setup` skill fails immediately because step 0 tries to update a git repo — but in plugin mode there's no repo to update, just a plugin directory.
 
 The setup flow needs to detect which mode it's running in and adapt accordingly, while keeping both modes as first-class citizens.
 
 ## Two Modes, One Codebase
 
 ### Plugin mode
-- Loaded via `claude --plugin-dir /path/to/motherclaw` or marketplace
+- Loaded via `claude --plugin-dir /path/to/claudeclaw` or marketplace
 - Skills discovered from `skills/` automatically
 - All state (DB, groups, logs, .env) lives in `CLAUDE_PLUGIN_DATA`
 - Background service runs `node <plugin-dir>/dist/service.js`
@@ -63,7 +63,7 @@ Both modes run these identically, but all file operations use the resolved base 
 - `ExecStart` → `node <plugin-dir>/dist/service.js`
 - `WorkingDirectory` → `<plugin-dir>`
 - `CLAUDE_PLUGIN_DATA` → set in environment variables
-- `MOTHERCLAW_ENV_FILE` → `<CLAUDE_PLUGIN_DATA>/.env`
+- `CLAUDECLAW_ENV_FILE` → `<CLAUDE_PLUGIN_DATA>/.env`
 
 **Developer mode:** Unchanged — `WorkingDirectory` is project root, `.env` read from project root.
 
@@ -83,17 +83,17 @@ CLAUDE_PLUGIN_DATA/
       CLAUDE.md           # Agent memory
       memory/             # Auto-memory
   logs/
-    motherclaw.log
-    motherclaw.error.log
+    claudeclaw.log
+    claudeclaw.error.log
 ```
 
 ### Developer mode (project root)
 ```
-motherclaw/
+claudeclaw/
   .env
   store/messages.db
   groups/main/CLAUDE.md
-  logs/motherclaw.log
+  logs/claudeclaw.log
 ```
 
 ## Config Changes (`src/orchestrator/config.ts`)
@@ -111,10 +111,10 @@ export const GROUPS_DIR = path.resolve(STATE_ROOT, 'groups');
 export const LOG_DIR = path.resolve(STATE_ROOT, 'logs');
 ```
 
-**`src/orchestrator/env.ts`** — `readEnvFile()` currently hardcodes `path.join(process.cwd(), '.env')`. Must be updated to check `MOTHERCLAW_ENV_FILE` first, then fall back to `STATE_ROOT/.env`:
+**`src/orchestrator/env.ts`** — `readEnvFile()` currently hardcodes `path.join(process.cwd(), '.env')`. Must be updated to check `CLAUDECLAW_ENV_FILE` first, then fall back to `STATE_ROOT/.env`:
 
 ```typescript
-const envFile = process.env.MOTHERCLAW_ENV_FILE
+const envFile = process.env.CLAUDECLAW_ENV_FILE
   || path.join(process.env.CLAUDE_PLUGIN_DATA || process.cwd(), '.env');
 ```
 
@@ -124,7 +124,7 @@ const envFile = process.env.MOTHERCLAW_ENV_FILE
 
 When a plugin user wants to customize, `/customize` detects plugin mode and offers:
 
-1. Fork `sbusso/motherclaw` on GitHub
+1. Fork `sbusso/claudeclaw` on GitHub
 2. Clone to a local directory
 3. Migrate state from `CLAUDE_PLUGIN_DATA` to the local repo
 4. Switch to developer mode (stop using `--plugin-dir`, run `claude` from repo)
@@ -149,12 +149,12 @@ The DB stores group folders as **relative names** (e.g. `'main'`, `'family'`), n
 
 ### Migration steps
 
-1. Stop running service: `launchctl unload ~/Library/LaunchAgents/com.motherclaw.plist` (macOS) or `systemctl --user stop motherclaw` (Linux)
-2. Fork `sbusso/motherclaw` on GitHub (user does this in browser)
-3. Clone: `git clone https://github.com/<user>/motherclaw.git ~/motherclaw`
-4. Copy state: `cp -r $CLAUDE_PLUGIN_DATA/{store,groups,.env,logs} ~/motherclaw/`
-5. Clear stale sessions: `sqlite3 ~/motherclaw/store/messages.db "DELETE FROM sessions"`
-6. Install deps and build: `cd ~/motherclaw && npm install && npm run build`
+1. Stop running service: `launchctl unload ~/Library/LaunchAgents/com.claudeclaw.plist` (macOS) or `systemctl --user stop claudeclaw` (Linux)
+2. Fork `sbusso/claudeclaw` on GitHub (user does this in browser)
+3. Clone: `git clone https://github.com/<user>/claudeclaw.git ~/claudeclaw`
+4. Copy state: `cp -r $CLAUDE_PLUGIN_DATA/{store,groups,.env,logs} ~/claudeclaw/`
+5. Clear stale sessions: `sqlite3 ~/claudeclaw/store/messages.db "DELETE FROM sessions"`
+6. Install deps and build: `cd ~/claudeclaw && npm install && npm run build`
 7. Re-run `/setup` step 7 (service) from inside the repo to generate new plist/systemd pointing to repo's `dist/service.js`
 8. Remove `--plugin-dir` from user's Claude Code invocation
 
@@ -166,8 +166,8 @@ Old `CLAUDE_PLUGIN_DATA` directory is left as backup. User can delete manually a
 |------|--------|
 | `skills/setup/SKILL.md` | Add mode detection at top, conditional step 0, plugin-mode state paths |
 | `src/orchestrator/config.ts` | Add `STATE_ROOT` from `CLAUDE_PLUGIN_DATA`, resolve STORE_DIR/GROUPS_DIR/LOG_DIR |
-| `src/orchestrator/env.ts` | `readEnvFile()` checks `MOTHERCLAW_ENV_FILE` / `CLAUDE_PLUGIN_DATA` before cwd |
-| `setup/service.ts` | Pass CLAUDE_PLUGIN_DATA and MOTHERCLAW_ENV_FILE in plist/systemd env; add `/opt/homebrew/bin` to PATH |
+| `src/orchestrator/env.ts` | `readEnvFile()` checks `CLAUDECLAW_ENV_FILE` / `CLAUDE_PLUGIN_DATA` before cwd |
+| `setup/service.ts` | Pass CLAUDE_PLUGIN_DATA and CLAUDECLAW_ENV_FILE in plist/systemd env; add `/opt/homebrew/bin` to PATH |
 | `setup/service.test.ts` | Add plugin-mode test cases; test config.ts path resolution with/without CLAUDE_PLUGIN_DATA |
 | `skills/customize/SKILL.md` | Add fork-and-migrate flow for plugin→developer upgrade |
 | `CLAUDE.md` | Document both modes |
@@ -176,6 +176,6 @@ Old `CLAUDE_PLUGIN_DATA` directory is left as backup. User can delete manually a
 
 1. `claude plugin validate .` — passes
 2. `claude --plugin-dir .` then `/setup` — detects plugin mode, skips git step, creates state in CLAUDE_PLUGIN_DATA
-3. `cd motherclaw && claude` then `/setup` — detects developer mode, runs full git/fork flow
+3. `cd claudeclaw && claude` then `/setup` — detects developer mode, runs full git/fork flow
 4. `npm test` — all tests pass with both CLAUDE_PLUGIN_DATA set and unset
 5. Service starts and reads .env from correct location in both modes

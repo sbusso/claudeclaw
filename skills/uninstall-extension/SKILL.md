@@ -1,12 +1,12 @@
 ---
 name: uninstall-extension
-description: Uninstall a MotherClaw extension
+description: Uninstall a ClaudeClaw extension
 trigger: /uninstall <name>
 ---
 
 # Uninstall Extension
 
-Remove an installed MotherClaw extension.
+Remove an installed ClaudeClaw extension.
 
 ## Usage
 
@@ -21,8 +21,8 @@ Remove an installed MotherClaw extension.
 
 ```bash
 EXTENSION_NAME="${1}"
-EXT_DIR="extensions/motherclaw-${EXTENSION_NAME}"
-[ ! -d "$EXT_DIR" ] && echo "Extension motherclaw-${EXTENSION_NAME} is not installed." && exit 1
+EXT_DIR="extensions/claudeclaw-${EXTENSION_NAME}"
+[ ! -d "$EXT_DIR" ] && echo "Extension claudeclaw-${EXTENSION_NAME} is not installed." && exit 1
 ```
 
 ### 2. Read manifest
@@ -33,7 +33,7 @@ cat "$EXT_DIR/manifest.json"
 
 ### 3. Confirm with user
 
-AskUserQuestion: "Uninstall motherclaw-<name>? This will remove its skills, agents, and agent skills. The extension's data (groups, messages) is preserved."
+AskUserQuestion: "Uninstall claudeclaw-<name>? This will remove its skills, agents, and agent skills. The extension's data (groups, messages) is preserved."
 
 ### 4. Run post-uninstall hook
 
@@ -60,4 +60,4 @@ Restart the service (same as install skill step 8).
 
 ### 7. Confirm
 
-Print: "Extension motherclaw-<name> uninstalled. Data in groups/ and store/ is preserved."
+Print: "Extension claudeclaw-<name> uninstalled. Data in groups/ and store/ is preserved."

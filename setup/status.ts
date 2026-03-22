@@ -7,7 +7,7 @@ export function emitStatus(
   step: string,
   fields: Record<string, string | number | boolean>,
 ): void {
-  const lines = [`=== MOTHERCLAW SETUP: ${step} ===`];
+  const lines = [`=== CLAUDECLAW SETUP: ${step} ===`];
   for (const [key, value] of Object.entries(fields)) {
     lines.push(`${key}: ${value}`);
   }

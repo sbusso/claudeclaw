@@ -1,18 +1,18 @@
 # Add Parallel AI Integration
 
-Adds Parallel AI MCP integration to MotherClaw for advanced web research capabilities.
+Adds Parallel AI MCP integration to ClaudeClaw for advanced web research capabilities.
 
 ## What This Adds
 
 - **Quick Search** - Fast web lookups using Parallel Search API (free to use)
 - **Deep Research** - Comprehensive analysis using Parallel Task API (asks permission)
-- **Non-blocking Design** - Uses MotherClaw scheduler for result polling (no container blocking)
+- **Non-blocking Design** - Uses ClaudeClaw scheduler for result polling (no container blocking)
 
 ## Prerequisites
 
 User must have:
 1. Parallel AI API key from https://platform.parallel.ai
-2. MotherClaw already set up and running
+2. ClaudeClaw already set up and running
 3. Docker installed and running
 
 ## Implementation Steps
@@ -83,14 +83,14 @@ Update `agent/runner/src/index.ts`:
 Find the section where `mcpServers` is configured (around line 237-252):
 ```typescript
 const mcpServers: Record<string, any> = {
-  motherclaw: ipcMcp
+  claudeclaw: ipcMcp
 };
 ```
 
-Add Parallel AI MCP servers after the motherclaw server:
+Add Parallel AI MCP servers after the claudeclaw server:
 ```typescript
 const mcpServers: Record<string, any> = {
-  motherclaw: ipcMcp
+  claudeclaw: ipcMcp
 };
 
 // Add Parallel AI MCP servers if API key is available
@@ -122,7 +122,7 @@ allowedTools: [
   'Bash',
   'Read', 'Write', 'Edit', 'Glob', 'Grep',
   'WebSearch', 'WebFetch',
-  'mcp__motherclaw__*',
+  'mcp__claudeclaw__*',
   'mcp__parallel-search__*',
   'mcp__parallel-task__*'
 ],
@@ -178,14 +178,14 @@ AskUserQuestion: I can do deep research on [topic] using Parallel's Task API. Th
 
 1. Create the task using `mcp__parallel-task__create_task_run`
 2. Get the `run_id` from the response
-3. Create a polling scheduled task using `mcp__motherclaw__schedule_task`:
+3. Create a polling scheduled task using `mcp__claudeclaw__schedule_task`:
    ```
    Prompt: "Check Parallel AI task run [run_id] and send results when ready.
 
    1. Use the Parallel Task MCP to check the task status
    2. If status is 'completed', extract the results
-   3. Send results to user with mcp__motherclaw__send_message
-   4. Use mcp__motherclaw__complete_scheduled_task to mark this task as done
+   3. Send results to user with mcp__claudeclaw__send_message
+   4. Use mcp__claudeclaw__complete_scheduled_task to mark this task as done
 
    If status is still 'running' or 'pending', do nothing (task will run again in 30s).
    If status is 'failed', send error message and complete the task."
@@ -224,26 +224,26 @@ Build the container with updated agent runner:
 
 Verify the build:
 ```bash
-echo '{}' | docker run -i --entrypoint /bin/echo motherclaw-agent:latest "Container OK"
+echo '{}' | docker run -i --entrypoint /bin/echo claudeclaw-agent:latest "Container OK"
 ```
 
 ### 7. Restart Service
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 Rebuild the main app and restart:
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 Wait 3 seconds for service to start, then verify:
 ```bash
 sleep 3
-launchctl list | grep motherclaw  # macOS
-# Linux: systemctl --user status motherclaw
+launchctl list | grep claudeclaw  # macOS
+# Linux: systemctl --user status claudeclaw
 ```
 
 ### 8. Test Integration
@@ -259,7 +259,7 @@ Tell the user to test:
 
 Check logs to verify MCP servers loaded:
 ```bash
-tail -20 logs/motherclaw.log
+tail -20 logs/claudeclaw.log
 ```
 
 Look for: `Parallel AI MCP servers configured`
@@ -278,7 +278,7 @@ Look for: `Parallel AI MCP servers configured`
 
 **Task polling not working:**
 - Verify scheduled task was created: `sqlite3 store/messages.db "SELECT * FROM scheduled_tasks"`
-- Check task runs: `tail -f logs/motherclaw.log | grep "scheduled task"`
+- Check task runs: `tail -f logs/claudeclaw.log | grep "scheduled task"`
 - Ensure task prompt includes proper Parallel MCP tool names
 
 ## Uninstalling
@@ -289,4 +289,4 @@ To remove Parallel AI integration:
 2. Revert changes to container-runner.ts and agent-runner/src/index.ts
 3. Remove Web Research Tools section from groups/main/CLAUDE.md
 4. Rebuild: `./docker/build.sh && npm run build`
-5. Restart: `launchctl kickstart -k gui/$(id -u)/com.motherclaw` (macOS) or `systemctl --user restart motherclaw` (Linux)
+5. Restart: `launchctl kickstart -k gui/$(id -u)/com.claudeclaw` (macOS) or `systemctl --user restart claudeclaw` (Linux)

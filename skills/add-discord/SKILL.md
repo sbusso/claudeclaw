@@ -1,11 +1,11 @@
 ---
 name: add-discord
-description: Add Discord bot channel integration to MotherClaw.
+description: Add Discord bot channel integration to ClaudeClaw.
 ---
 
 # Add Discord Channel
 
-This skill adds Discord support to MotherClaw, then walks through interactive setup.
+This skill adds Discord support to ClaudeClaw, then walks through interactive setup.
 
 ## Phase 1: Pre-flight
 
@@ -32,7 +32,7 @@ git remote -v
 If `discord` is missing, add it:
 
 ```bash
-git remote add discord https://github.com/qwibitai/motherclaw-discord.git
+git remote add discord https://github.com/qwibitai/claudeclaw-discord.git
 ```
 
 ### Merge the skill branch
@@ -105,13 +105,13 @@ mkdir -p data/env && cp .env data/env/env
 
 The container reads environment from `data/env/env`, not `.env` directly.
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ### Build and restart
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw
 ```
 
 ## Phase 4: Registration
@@ -161,7 +161,7 @@ Tell the user:
 ### Check logs if needed
 
 ```bash
-tail -f logs/motherclaw.log
+tail -f logs/claudeclaw.log
 ```
 
 ## Troubleshooting
@@ -171,7 +171,7 @@ tail -f logs/motherclaw.log
 1. Check `DISCORD_BOT_TOKEN` is set in `.env` AND synced to `data/env/env`
 2. Check channel is registered: `sqlite3 store/messages.db "SELECT * FROM registered_groups WHERE jid LIKE 'dc:%'"`
 3. For non-main channels: message must include trigger pattern (@mention the bot)
-4. Service is running: `launchctl list | grep motherclaw`
+4. Service is running: `launchctl list | grep claudeclaw`
 5. Verify the bot has been invited to the server (check OAuth2 URL was used)
 
 ### Bot only responds to @mentions
@@ -186,7 +186,7 @@ If the bot connects but can't read messages, ensure:
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Select your application > **Bot** tab
 3. Under **Privileged Gateway Intents**, enable **Message Content Intent**
-4. Restart MotherClaw
+4. Restart ClaudeClaw
 
 ### Getting Channel ID
 
@@ -200,6 +200,6 @@ The Discord bot supports:
 - Text messages in registered channels
 - Attachment descriptions (images, videos, files shown as placeholders)
 - Reply context (shows who the user is replying to)
-- @mention translation (Discord `<@botId>` → MotherClaw trigger format)
+- @mention translation (Discord `<@botId>` → ClaudeClaw trigger format)
 - Message splitting for responses over 2000 characters
 - Typing indicators while the agent processes

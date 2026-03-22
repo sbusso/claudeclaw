@@ -469,7 +469,7 @@ async function startMessageLoop(): Promise<void> {
   }
   messageLoopRunning = true;
 
-  logger.info(`MotherClaw running (trigger: @${ASSISTANT_NAME})`);
+  logger.info(`ClaudeClaw running (trigger: @${ASSISTANT_NAME})`);
 
   while (true) {
     try {

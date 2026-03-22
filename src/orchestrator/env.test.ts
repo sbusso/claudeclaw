@@ -14,10 +14,10 @@ describe('readEnvFile', () => {
     process.env = originalEnv;
   });
 
-  it('reads from MOTHERCLAW_ENV_FILE when set', async () => {
-    const tmpEnv = path.join(process.env.TMPDIR || '/tmp', 'test-motherclaw.env');
+  it('reads from CLAUDECLAW_ENV_FILE when set', async () => {
+    const tmpEnv = path.join(process.env.TMPDIR || '/tmp', 'test-claudeclaw.env');
     fs.writeFileSync(tmpEnv, 'TEST_KEY=from_env_file\n');
-    process.env.MOTHERCLAW_ENV_FILE = tmpEnv;
+    process.env.CLAUDECLAW_ENV_FILE = tmpEnv;
 
     const { readEnvFile } = await import('./env.js');
     const result = readEnvFile(['TEST_KEY']);
@@ -27,7 +27,7 @@ describe('readEnvFile', () => {
   });
 
   it('reads from cwd/.env by default', async () => {
-    delete process.env.MOTHERCLAW_ENV_FILE;
+    delete process.env.CLAUDECLAW_ENV_FILE;
 
     const { readEnvFile } = await import('./env.js');
     // Should not throw even if .env doesn't exist — returns empty

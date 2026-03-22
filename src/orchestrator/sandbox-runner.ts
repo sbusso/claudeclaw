@@ -1,5 +1,5 @@
 /**
- * Sandbox runtime for MotherClaw.
+ * Sandbox runtime for ClaudeClaw.
  *
  * Uses OS-level sandboxing (Seatbelt on macOS, bubblewrap on Linux) via
  * @anthropic-ai/sandbox-runtime for near-zero-overhead agent execution.
@@ -32,8 +32,8 @@ import { RegisteredGroup } from './types.js';
 import type { ContainerInput, ContainerOutput } from './container-runner.js';
 
 // Sentinel markers for robust output parsing (must match agent-runner)
-const OUTPUT_START_MARKER = '---MOTHERCLAW_OUTPUT_START---';
-const OUTPUT_END_MARKER = '---MOTHERCLAW_OUTPUT_END---';
+const OUTPUT_START_MARKER = '---CLAUDECLAW_OUTPUT_START---';
+const OUTPUT_END_MARKER = '---CLAUDECLAW_OUTPUT_END---';
 
 const SANDBOX_PID_DIR = path.join(DATA_DIR, 'sandbox-pids');
 
@@ -353,7 +353,7 @@ export async function runSandboxAgent(
   fs.mkdirSync(groupDir, { recursive: true });
 
   const safeName = group.folder.replace(/[^a-zA-Z0-9-]/g, '-');
-  const processName = `motherclaw-sandbox-${safeName}-${Date.now()}`;
+  const processName = `claudeclaw-sandbox-${safeName}-${Date.now()}`;
 
   // Build mounts and srt settings
   const mounts = buildSandboxMounts(group, input.isMain);
@@ -383,15 +383,15 @@ export async function runSandboxAgent(
     const pathEnv: Record<string, string> = {};
     for (const mount of mounts) {
       if (mount.containerPath === '/workspace/group')
-        pathEnv.MOTHERCLAW_GROUP_DIR = mount.hostPath;
+        pathEnv.CLAUDECLAW_GROUP_DIR = mount.hostPath;
       else if (mount.containerPath === '/workspace/ipc')
-        pathEnv.MOTHERCLAW_IPC_DIR = mount.hostPath;
+        pathEnv.CLAUDECLAW_IPC_DIR = mount.hostPath;
       else if (mount.containerPath === '/workspace/project' && !mount.deny)
-        pathEnv.MOTHERCLAW_PROJECT_DIR = mount.hostPath;
+        pathEnv.CLAUDECLAW_PROJECT_DIR = mount.hostPath;
       else if (mount.containerPath === '/workspace/global')
-        pathEnv.MOTHERCLAW_GLOBAL_DIR = mount.hostPath;
+        pathEnv.CLAUDECLAW_GLOBAL_DIR = mount.hostPath;
       else if (mount.containerPath?.startsWith('/workspace/extra'))
-        pathEnv.MOTHERCLAW_EXTRA_DIR = mount.hostPath;
+        pathEnv.CLAUDECLAW_EXTRA_DIR = mount.hostPath;
     }
 
     // Sandbox: real credentials + restricted network (no proxy needed)

@@ -1,12 +1,12 @@
 {
-  "name": "motherclaw",
+  "name": "claudeclaw",
   "version": "0.1.0",
-  "description": "Persistent agent orchestrator for Claude Code. Multi-channel message routing, triage, and SWE task management. Run /motherclaw:setup to create your first instance and configure channels.",
+  "description": "Persistent agent orchestrator for Claude Code. Multi-channel message routing, triage, and SWE task management. Run /claudeclaw:setup to create your first instance and configure channels.",
   "author": {
     "name": "sbusso",
     "url": "https://github.com/sbusso"
   },
-  "repository": "https://github.com/sbusso/motherclaw",
+  "repository": "https://github.com/sbusso/claudeclaw",
   "license": "MIT",
   "keywords": ["agents", "orchestrator", "slack", "telegram", "whatsapp", "sandbox"]
 }

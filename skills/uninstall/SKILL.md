@@ -1,12 +1,12 @@
 ---
 name: uninstall
-description: Stop and remove the MotherClaw background service and agents for this instance
+description: Stop and remove the ClaudeClaw background service and agents for this instance
 trigger: /uninstall
 ---
 
 # Uninstall Service
 
-Stop and remove the MotherClaw background service for the current instance. Data (store/, groups/, .env) is preserved — only the service unit is removed.
+Stop and remove the ClaudeClaw background service for the current instance. Data (store/, groups/, .env) is preserved — only the service unit is removed.
 
 ## Flow
 
@@ -15,14 +15,14 @@ Stop and remove the MotherClaw background service for the current instance. Data
 **macOS:**
 ```bash
 DIRNAME=$(basename "$(pwd)")
-PLIST_NAME="com.motherclaw.${DIRNAME}"
+PLIST_NAME="com.claudeclaw.${DIRNAME}"
 PLIST_PATH="$HOME/Library/LaunchAgents/${PLIST_NAME}.plist"
 ```
 
 **Linux:**
 ```bash
 DIRNAME=$(basename "$(pwd)")
-SERVICE_NAME="motherclaw-${DIRNAME}"
+SERVICE_NAME="claudeclaw-${DIRNAME}"
 SERVICE_PATH="$HOME/.config/systemd/user/${SERVICE_NAME}.service"
 ```
 
@@ -39,14 +39,14 @@ SERVICE_PATH="$HOME/.config/systemd/user/${SERVICE_NAME}.service"
 If no service file found, also check for running processes:
 ```bash
 # macOS — check if loaded even without plist
-launchctl list | grep motherclaw
+launchctl list | grep claudeclaw
 # Linux
-systemctl --user list-units | grep motherclaw
+systemctl --user list-units | grep claudeclaw
 ```
 
 ### 3. Confirm with user
 
-AskUserQuestion: "Remove MotherClaw service for this instance? This will stop the background process. Your data (groups, messages, .env) is preserved."
+AskUserQuestion: "Remove ClaudeClaw service for this instance? This will stop the background process. Your data (groups, messages, .env) is preserved."
 
 ### 4. Stop and unload
 
@@ -86,7 +86,7 @@ Only kill processes whose cwd matches the current directory to avoid killing oth
 
 Print:
 ```
-MotherClaw service removed for this instance.
+ClaudeClaw service removed for this instance.
 - Service file: deleted
 - Process: stopped
 - Data: preserved (store/, groups/, .env still in place)

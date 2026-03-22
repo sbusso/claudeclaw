@@ -3,17 +3,17 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 
 // Sentinel markers must match container-runner.ts
-const OUTPUT_START_MARKER = '---MOTHERCLAW_OUTPUT_START---';
-const OUTPUT_END_MARKER = '---MOTHERCLAW_OUTPUT_END---';
+const OUTPUT_START_MARKER = '---CLAUDECLAW_OUTPUT_START---';
+const OUTPUT_END_MARKER = '---CLAUDECLAW_OUTPUT_END---';
 
 // Mock config
 vi.mock('./config.js', () => ({
-  CONTAINER_IMAGE: 'motherclaw-agent:latest',
+  CONTAINER_IMAGE: 'claudeclaw-agent:latest',
   CONTAINER_MAX_OUTPUT_SIZE: 10485760,
   CONTAINER_TIMEOUT: 1800000, // 30min
   CREDENTIAL_PROXY_PORT: 3001,
-  DATA_DIR: '/tmp/motherclaw-test-data',
-  GROUPS_DIR: '/tmp/motherclaw-test-groups',
+  DATA_DIR: '/tmp/claudeclaw-test-data',
+  GROUPS_DIR: '/tmp/claudeclaw-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
   TIMEZONE: 'America/Los_Angeles',
 }));

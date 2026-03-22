@@ -1,12 +1,12 @@
 {
-  "name": "motherclaw",
+  "name": "claudeclaw",
   "version": "1.2.14",
   "description": "Persistent agent orchestrator plugin for Claude Code.",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && npm run build:extensions",
-    "build:extensions": "for d in extensions/motherclaw-*/; do [ -f \"$d/tsconfig.json\" ] && (cd \"$d\" && npx tsc) || true; done",
+    "build:extensions": "for d in extensions/claudeclaw-*/; do [ -f \"$d/tsconfig.json\" ] && (cd \"$d\" && npx tsc) || true; done",
     "start": "node dist/service.js",
     "dev": "tsx src/service.ts",
     "typecheck": "tsc --noEmit",

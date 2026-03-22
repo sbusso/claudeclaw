@@ -5,7 +5,7 @@ import { EventEmitter } from 'events';
 
 // Mock config
 vi.mock('../orchestrator/config.js', () => ({
-  STORE_DIR: '/tmp/motherclaw-test-store',
+  STORE_DIR: '/tmp/claudeclaw-test-store',
   ASSISTANT_NAME: 'Andy',
   ASSISTANT_HAS_OWN_NUMBER: false,
 }));

@@ -1,4 +1,4 @@
-# MotherClaw
+# ClaudeClaw
 
 Persistent agent orchestrator plugin for Claude Code. Multi-channel message routing, structured memory, webhook triggers, cost tracking — with OS-level sandbox isolation.
 
@@ -6,7 +6,7 @@ Built on [NanoClaw](https://github.com/qwibitai/nanoclaw) — ported to a Claude
 
 ## What It Does
 
-MotherClaw is a Claude Code plugin that provides an always-on message loop. It listens to channels (Slack, WhatsApp, Telegram), routes messages to Claude agents running in isolated sandboxes, and manages ongoing conversations with structured memory.
+ClaudeClaw is a Claude Code plugin that provides an always-on message loop. It listens to channels (Slack, WhatsApp, Telegram), routes messages to Claude agents running in isolated sandboxes, and manages ongoing conversations with structured memory.
 
 ### Core (Orchestrator)
 - **Always-on message loop** — persistent listener, not one-shot
@@ -30,8 +30,8 @@ MotherClaw is a Claude Code plugin that provides an always-on message loop. It l
 ## Quick Start
 
 ```bash
-git clone https://github.com/sbusso/motherclaw.git
-cd motherclaw
+git clone https://github.com/sbusso/claudeclaw.git
+cd claudeclaw
 claude
 # type: /setup
 ```
@@ -40,7 +40,7 @@ claude
 
 ## Runtime Options
 
-MotherClaw supports two agent execution runtimes. Set `RUNTIME` in `.env`:
+ClaudeClaw supports two agent execution runtimes. Set `RUNTIME` in `.env`:
 
 | | Sandbox (default) | Container |
 |---|---|---|
@@ -77,7 +77,7 @@ Per-group override: set `"runtime": "sandbox"` in the registered group config to
 
 ## Agent Triggers
 
-MotherClaw agents can be triggered three ways:
+ClaudeClaw agents can be triggered three ways:
 
 | Trigger | How | Use Case |
 |---------|-----|----------|
@@ -164,13 +164,13 @@ sqlite3 store/messages.db \
 # Create a directory for your assistant
 mkdir ~/my-assistant && cd ~/my-assistant
 
-# Load MotherClaw as a plugin
-claude --plugin-dir /path/to/motherclaw
+# Load ClaudeClaw as a plugin
+claude --plugin-dir /path/to/claudeclaw
 
 # Run /setup to configure channels and start the service
 ```
 
-**Directory = Instance.** The current directory IS the MotherClaw instance. All state (`.env`, `store/`, `groups/`, `logs/`) lives in cwd. No hidden paths, no `~/.claude/plugin-data/`.
+**Directory = Instance.** The current directory IS the ClaudeClaw instance. All state (`.env`, `store/`, `groups/`, `logs/`) lives in cwd. No hidden paths, no `~/.claude/plugin-data/`.
 
 **Multiple instances = multiple directories:**
 ```bash
@@ -178,7 +178,7 @@ claude --plugin-dir /path/to/motherclaw
 ~/assistants/work/        # cd here, run claude
 ```
 
-Services are named per directory (`com.motherclaw.personal.plist` on macOS). Want to customize the code? Clone the repo into your data directory — `.env`, `store/`, `groups/` are gitignored, so they survive the clone. Now you're in developer mode with full self-improvement.
+Services are named per directory (`com.claudeclaw.personal.plist` on macOS). Want to customize the code? Clone the repo into your data directory — `.env`, `store/`, `groups/` are gitignored, so they survive the clone. Now you're in developer mode with full self-improvement.
 
 ## Philosophy
 
@@ -210,19 +210,19 @@ Services are named per directory (`com.motherclaw.personal.plist` on macOS). Wan
 
 ## Usage
 
-Talk to your assistant with the trigger word (default: `@MotherClaw`):
+Talk to your assistant with the trigger word (default: `@ClaudeClaw`):
 
 ```
-@MotherClaw send an overview of the sales pipeline every weekday morning at 9am
-@MotherClaw review the git history for the past week each Friday and update the README if there's drift
-@MotherClaw every Monday at 8am, compile news on AI developments and message me a briefing
+@ClaudeClaw send an overview of the sales pipeline every weekday morning at 9am
+@ClaudeClaw review the git history for the past week each Friday and update the README if there's drift
+@ClaudeClaw every Monday at 8am, compile news on AI developments and message me a briefing
 ```
 
 From the main channel, manage groups and tasks:
 ```
-@MotherClaw list all scheduled tasks across groups
-@MotherClaw pause the Monday briefing task
-@MotherClaw join the Family Chat group
+@ClaudeClaw list all scheduled tasks across groups
+@ClaudeClaw pause the Monday briefing task
+@ClaudeClaw join the Family Chat group
 ```
 
 ## Architecture
@@ -294,7 +294,7 @@ The sandbox runner (`sandbox-runner.ts`) generates a per-agent srt settings JSON
 }
 ```
 
-Path mapping via `MOTHERCLAW_*_DIR` env vars makes the agent runner runtime-agnostic — same binary works in both sandbox and container mode.
+Path mapping via `CLAUDECLAW_*_DIR` env vars makes the agent runner runtime-agnostic — same binary works in both sandbox and container mode.
 
 ## Extension System
 
@@ -316,7 +316,7 @@ Built-in extensions: **webhook triggers**, **cost tracking**, **triage + SWE que
 
 ## Customizing
 
-MotherClaw doesn't use configuration files. To make changes, just tell Claude Code what you want:
+ClaudeClaw doesn't use configuration files. To make changes, just tell Claude Code what you want:
 
 - "Change the trigger word to @Bob"
 - "Add a morning briefing that runs at 7am and posts to Slack"
@@ -348,7 +348,7 @@ Yes. Sandbox uses bubblewrap on Linux. Container mode uses Docker. Just run `/se
 
 **Why no configuration files?**
 
-We don't want configuration sprawl. Every user should customize MotherClaw so that the code does exactly what they want, rather than configuring a generic system.
+We don't want configuration sprawl. Every user should customize ClaudeClaw so that the code does exactly what they want, rather than configuring a generic system.
 
 **How do I debug issues?**
 

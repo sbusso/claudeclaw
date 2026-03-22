@@ -1,6 +1,6 @@
 ---
 name: add-pdf-reader
-description: Add PDF reading to MotherClaw agents. Extracts text from PDFs via pdftotext CLI. Handles WhatsApp attachments, URLs, and local files.
+description: Add PDF reading to ClaudeClaw agents. Extracts text from PDFs via pdftotext CLI. Handles WhatsApp attachments, URLs, and local files.
 ---
 
 # Add PDF Reader
@@ -23,7 +23,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/motherclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/claudeclaw-whatsapp.git
 ```
 
 ### Merge the skill branch
@@ -59,13 +59,13 @@ npx vitest run src/channels/whatsapp.test.ts
 ./docker/build.sh
 ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ### Restart service
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 ## Phase 3: Verify
@@ -84,7 +84,7 @@ Ask the agent to read a PDF from a URL. It should use `pdf-reader fetch <url>`.
 ### Check logs if needed
 
 ```bash
-tail -f logs/motherclaw.log | grep -i pdf
+tail -f logs/claudeclaw.log | grep -i pdf
 ```
 
 Look for:

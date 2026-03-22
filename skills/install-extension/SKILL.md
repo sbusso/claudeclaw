@@ -1,12 +1,12 @@
 ---
 name: install-extension
-description: Install a MotherClaw extension (e.g., slack, triage)
+description: Install a ClaudeClaw extension (e.g., slack, triage)
 trigger: /install <name>
 ---
 
 # Install Extension
 
-Install a MotherClaw extension from GitHub.
+Install a ClaudeClaw extension from GitHub.
 
 ## Usage
 
@@ -19,18 +19,18 @@ Install a MotherClaw extension from GitHub.
 
 ### 1. Validate input
 
-The argument is the extension short name (e.g., `slack`, `triage`). The full repo name is `motherclaw-<name>`.
+The argument is the extension short name (e.g., `slack`, `triage`). The full repo name is `claudeclaw-<name>`.
 
 ```bash
 EXTENSION_NAME="${1}"
-REPO="https://github.com/sbusso/motherclaw-${EXTENSION_NAME}.git"
-EXT_DIR="extensions/motherclaw-${EXTENSION_NAME}"
+REPO="https://github.com/sbusso/claudeclaw-${EXTENSION_NAME}.git"
+EXT_DIR="extensions/claudeclaw-${EXTENSION_NAME}"
 ```
 
 ### 2. Check if already installed
 
 ```bash
-[ -d "$EXT_DIR" ] && echo "Extension motherclaw-${EXTENSION_NAME} is already installed." && exit 0
+[ -d "$EXT_DIR" ] && echo "Extension claudeclaw-${EXTENSION_NAME} is already installed." && exit 0
 ```
 
 If already installed, ask if the user wants to update instead (git pull + rebuild).
@@ -69,7 +69,7 @@ chmod +x "$EXT_DIR/hooks/install.sh"
 bash "$EXT_DIR/hooks/install.sh" "$(git rev-parse --show-toplevel)"
 ```
 
-This copies skills, agents, and agent skills into the MotherClaw root.
+This copies skills, agents, and agent skills into the ClaudeClaw root.
 
 ### 7. Rebuild core
 
@@ -83,20 +83,20 @@ Detect OS and restart:
 
 **macOS:**
 ```bash
-SERVICE_NAME=$(launchctl list | grep motherclaw | awk '{print $3}')
+SERVICE_NAME=$(launchctl list | grep claudeclaw | awk '{print $3}')
 [ -n "$SERVICE_NAME" ] && launchctl kickstart -k "gui/$(id -u)/$SERVICE_NAME"
 ```
 
 **Linux:**
 ```bash
-systemctl --user restart motherclaw
+systemctl --user restart claudeclaw
 ```
 
 ### 9. Verify
 
 Print confirmation:
 ```
-Extension motherclaw-<name> installed successfully.
+Extension claudeclaw-<name> installed successfully.
 - Skills: <list from manifest>
 - Type: <channel|extension>
 - Restart: service restarted

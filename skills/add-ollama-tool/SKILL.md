@@ -48,7 +48,7 @@ git remote -v
 If `upstream` is missing, add it:
 
 ```bash
-git remote add upstream https://github.com/sbusso/motherclaw.git
+git remote add upstream https://github.com/sbusso/claudeclaw.git
 ```
 
 ### Merge the skill branch
@@ -97,13 +97,13 @@ By default, the MCP server connects to `http://host.docker.internal:11434` (Dock
 OLLAMA_HOST=http://your-ollama-host:11434
 ```
 
-> **Service name:** Derived from the directory name: `com.motherclaw.<dirname>` (macOS) / `motherclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.motherclaw.my-assistant`. Determine the correct service name before running service commands below.
+> **Service name:** Derived from the directory name: `com.claudeclaw.<dirname>` (macOS) / `claudeclaw-<dirname>` (Linux). For example, if cwd is `my-assistant`, the service is `com.claudeclaw.my-assistant`. Determine the correct service name before running service commands below.
 
 ### Restart the service
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.motherclaw  # macOS
-# Linux: systemctl --user restart motherclaw
+launchctl kickstart -k gui/$(id -u)/com.claudeclaw  # macOS
+# Linux: systemctl --user restart claudeclaw
 ```
 
 ## Phase 4: Verify
@@ -127,7 +127,7 @@ Run the watcher script for macOS notifications when Ollama is used:
 ### Check logs if needed
 
 ```bash
-tail -f logs/motherclaw.log | grep -i ollama
+tail -f logs/claudeclaw.log | grep -i ollama
 ```
 
 Look for:

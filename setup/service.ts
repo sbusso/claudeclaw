@@ -24,12 +24,12 @@ import { emitStatus } from './status.js';
 
 export async function run(_args: string[]): Promise<void> {
   // Project directory: where .env, store/, groups/, logs/ live.
-  // In plugin mode, MOTHERCLAW_PROJECT_DIR MUST be set by the setup skill
+  // In plugin mode, CLAUDECLAW_PROJECT_DIR MUST be set by the setup skill
   // because cwd is the plugin code root (needed for npx/tsx).
   // In developer mode, cwd IS the project dir so the fallback is safe.
   const isPluginMode = !!process.env.CLAUDE_PLUGIN_ROOT;
-  if (isPluginMode && !process.env.MOTHERCLAW_PROJECT_DIR) {
-    logger.error('MOTHERCLAW_PROJECT_DIR must be set in plugin mode — cannot fall back to cwd (plugin source dir)');
+  if (isPluginMode && !process.env.CLAUDECLAW_PROJECT_DIR) {
+    logger.error('CLAUDECLAW_PROJECT_DIR must be set in plugin mode — cannot fall back to cwd (plugin source dir)');
     emitStatus('SETUP_SERVICE', {
       SERVICE_TYPE: 'unknown',
       NODE_PATH: '',
@@ -40,7 +40,7 @@ export async function run(_args: string[]): Promise<void> {
     });
     process.exit(1);
   }
-  const dataDir = process.env.MOTHERCLAW_PROJECT_DIR || process.cwd();
+  const dataDir = process.env.CLAUDECLAW_PROJECT_DIR || process.cwd();
   // Code root: in plugin mode, CLAUDE_PLUGIN_ROOT points to the plugin code.
   // In developer mode, code is in cwd.
   const codeRoot = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
@@ -98,7 +98,7 @@ function setupLaunchd(
 ): void {
   // Service label derived from data directory name for uniqueness
   const dirName = path.basename(dataDir).replace(/[^a-zA-Z0-9_-]/g, '-');
-  const serviceLabel = `com.motherclaw.${dirName}`;
+  const serviceLabel = `com.claudeclaw.${dirName}`;
   const plistFilename = `${serviceLabel}.plist`;
   const plistPath = path.join(
     homeDir,
@@ -136,9 +136,9 @@ function setupLaunchd(
         <string>${homeDir}</string>
     </dict>
     <key>StandardOutPath</key>
-    <string>${logDir}/motherclaw.log</string>
+    <string>${logDir}/claudeclaw.log</string>
     <key>StandardErrorPath</key>
-    <string>${logDir}/motherclaw.error.log</string>
+    <string>${logDir}/claudeclaw.error.log</string>
 </dict>
 </plist>`;
 
@@ -191,7 +191,7 @@ function setupLinux(
 }
 
 /**
- * Kill any orphaned motherclaw node processes left from previous runs.
+ * Kill any orphaned claudeclaw node processes left from previous runs.
  * Matches on the data directory to avoid killing other instances.
  */
 function killOrphanedProcesses(codeRoot: string): void {
@@ -199,7 +199,7 @@ function killOrphanedProcesses(codeRoot: string): void {
     execSync(`pkill -f '${codeRoot}/dist/service\\.js' || true`, {
       stdio: 'ignore',
     });
-    logger.info('Stopped any orphaned motherclaw processes');
+    logger.info('Stopped any orphaned claudeclaw processes');
   } catch {
     // pkill not available or no orphans
   }
@@ -233,7 +233,7 @@ function setupSystemd(
 ): void {
   const runningAsRoot = isRoot();
   const dirName = path.basename(dataDir).replace(/[^a-zA-Z0-9_-]/g, '-');
-  const unitName = `motherclaw-${dirName}`;
+  const unitName = `claudeclaw-${dirName}`;
 
   let unitPath: string;
   let systemctlPrefix: string;
@@ -260,7 +260,7 @@ function setupSystemd(
   fs.mkdirSync(logDir, { recursive: true });
 
   const unit = `[Unit]
-Description=MotherClaw Personal Assistant (${dirName})
+Description=ClaudeClaw Personal Assistant (${dirName})
 After=network.target
 
 [Service]
@@ -271,8 +271,8 @@ Restart=always
 RestartSec=5
 Environment=HOME=${homeDir}
 Environment=PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${homeDir}/.local/bin
-StandardOutput=append:${logDir}/motherclaw.log
-StandardError=append:${logDir}/motherclaw.error.log
+StandardOutput=append:${logDir}/claudeclaw.log
+StandardError=append:${logDir}/claudeclaw.error.log
 
 [Install]
 WantedBy=${runningAsRoot ? 'multi-user.target' : 'default.target'}`;
@@ -318,13 +318,13 @@ function setupNohupFallback(
 ): void {
   logger.warn('No systemd detected — generating nohup wrapper script');
 
-  const wrapperPath = path.join(dataDir, 'start-motherclaw.sh');
-  const pidFile = path.join(dataDir, 'motherclaw.pid');
+  const wrapperPath = path.join(dataDir, 'start-claudeclaw.sh');
+  const pidFile = path.join(dataDir, 'claudeclaw.pid');
   const logDir = path.join(dataDir, 'logs');
 
   const lines = [
     '#!/bin/bash',
-    '# start-motherclaw.sh — Start MotherClaw without systemd',
+    '# start-claudeclaw.sh — Start ClaudeClaw without systemd',
     `# To stop: kill $(cat ${pidFile})`,
     '',
     'set -euo pipefail',
@@ -336,20 +336,20 @@ function setupNohupFallback(
     `if [ -f ${JSON.stringify(pidFile)} ]; then`,
     `  OLD_PID=$(cat ${JSON.stringify(pidFile)} 2>/dev/null || echo "")`,
     '  if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then',
-    '    echo "Stopping existing MotherClaw (PID $OLD_PID)..."',
+    '    echo "Stopping existing ClaudeClaw (PID $OLD_PID)..."',
     '    kill "$OLD_PID" 2>/dev/null || true',
     '    sleep 2',
     '  fi',
     'fi',
     '',
-    'echo "Starting MotherClaw..."',
+    'echo "Starting ClaudeClaw..."',
     `nohup ${JSON.stringify(nodePath)} ${JSON.stringify(codeRoot + '/dist/service.js')} \\`,
-    `  >> ${JSON.stringify(logDir + '/motherclaw.log')} \\`,
-    `  2>> ${JSON.stringify(logDir + '/motherclaw.error.log')} &`,
+    `  >> ${JSON.stringify(logDir + '/claudeclaw.log')} \\`,
+    `  2>> ${JSON.stringify(logDir + '/claudeclaw.error.log')} &`,
     '',
     `echo $! > ${JSON.stringify(pidFile)}`,
-    'echo "MotherClaw started (PID $!)"',
-    `echo "Logs: tail -f ${logDir}/motherclaw.log"`,
+    'echo "ClaudeClaw started (PID $!)"',
+    `echo "Logs: tail -f ${logDir}/claudeclaw.log"`,
   ];
   const wrapper = lines.join('\n') + '\n';
 
