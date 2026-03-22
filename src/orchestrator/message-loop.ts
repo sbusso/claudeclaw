@@ -72,7 +72,7 @@ import { startSchedulerLoop } from './task-scheduler.js';
 import { callExtensionStartup, getExtensionDbSchema, wireExtensionHooks } from './extensions.js';
 // Load plugins (self-registering on import)
 // Extensions loaded from src/index.ts;
-import { Channel, NewMessage, RegisteredGroup } from './types.js';
+import { Channel, MessageRouter, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
 import { logAgentRun } from '../cost-tracking/index.js';
 import { startWebhookServer } from '../webhook/server.js';
@@ -87,8 +87,6 @@ let lastAgentTimestamp: Record<string, string> = {};
 let messageLoopRunning = false;
 
 const channels: Channel[] = [];
-import type { MessageRouter } from './types.js';
-let moduleRouter: MessageRouter | null = null;
 const queue = new GroupQueue();
 
 function loadState(): void {
@@ -178,7 +176,7 @@ export function _setRegisteredGroups(
  * Process all pending messages for a group.
  * Called by the GroupQueue when it's this group's turn.
  */
-async function processGroupMessages(chatJid: string): Promise<boolean> {
+async function processGroupMessages(chatJid: string, router: MessageRouter): Promise<boolean> {
   const group = registeredGroups[chatJid];
   if (!group) return true;
 
@@ -286,8 +284,8 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
           `Agent output: ${raw.slice(0, 200)}`,
         );
         // Route through MessageRouter (handles formatOutbound + hooks + channel delivery)
-        if (raw.trim() && moduleRouter) {
-          await moduleRouter.route({
+        if (raw.trim()) {
+          await router.route({
             chatJid: replyJid,
             text: raw,
             triggerType: 'agent-response',
@@ -737,7 +735,6 @@ export async function main(): Promise<void> {
 
   // Create routing services (must be before subsystem startup)
   const router = createMessageRouter(channels);
-  moduleRouter = router;
 
   // Start subsystems (independently of connection handler)
   startSchedulerLoop({
@@ -806,7 +803,7 @@ export async function main(): Promise<void> {
     });
   }
 
-  queue.setProcessMessagesFn(processGroupMessages);
+  queue.setProcessMessagesFn((chatJid) => processGroupMessages(chatJid, router));
   recoverPendingMessages();
   startMessageLoop().catch((err) => {
     logger.fatal({ err }, 'Message loop crashed unexpectedly');
