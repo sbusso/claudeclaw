@@ -23,10 +23,24 @@ import {
 import { emitStatus } from './status.js';
 
 export async function run(_args: string[]): Promise<void> {
-  // Data directory: explicit DATA_DIR env var > cwd.
-  // In plugin mode, the setup skill sets DATA_DIR to the instance directory
-  // while cwd is the plugin code root (needed to find npx/tsx).
-  const dataDir = process.env.DATA_DIR || process.cwd();
+  // Project directory: where .env, store/, groups/, logs/ live.
+  // In plugin mode, MOTHERCLAW_PROJECT_DIR MUST be set by the setup skill
+  // because cwd is the plugin code root (needed for npx/tsx).
+  // In developer mode, cwd IS the project dir so the fallback is safe.
+  const isPluginMode = !!process.env.CLAUDE_PLUGIN_ROOT;
+  if (isPluginMode && !process.env.MOTHERCLAW_PROJECT_DIR) {
+    logger.error('MOTHERCLAW_PROJECT_DIR must be set in plugin mode — cannot fall back to cwd (plugin source dir)');
+    emitStatus('SETUP_SERVICE', {
+      SERVICE_TYPE: 'unknown',
+      NODE_PATH: '',
+      PROJECT_PATH: '',
+      STATUS: 'failed',
+      ERROR: 'missing_project_dir',
+      LOG: 'logs/setup.log',
+    });
+    process.exit(1);
+  }
+  const dataDir = process.env.MOTHERCLAW_PROJECT_DIR || process.cwd();
   // Code root: in plugin mode, CLAUDE_PLUGIN_ROOT points to the plugin code.
   // In developer mode, code is in cwd.
   const codeRoot = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
