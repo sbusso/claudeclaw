@@ -1,6 +1,10 @@
-# ClaudeClaw
+<p align="center">
+  <img src="assets/logo.webp" alt="ClaudeClaw" width="200" />
+</p>
 
-Persistent agent orchestrator plugin for Claude Code. Multi-channel message routing, structured memory, webhook triggers, cost tracking — with OS-level sandbox isolation.
+<h1 align="center">ClaudeClaw</h1>
+
+<p align="center">Persistent agent orchestrator plugin for Claude Code. Multi-channel message routing, structured memory, webhook triggers, cost tracking — with OS-level sandbox isolation.</p>
 
 Built on [NanoClaw](https://github.com/qwibitai/nanoclaw) — ported to a Claude Code plugin architecture with a pluggable extension system and Anthropic's sandbox runtime.
 
