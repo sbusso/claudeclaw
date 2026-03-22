@@ -271,6 +271,100 @@ Run `npx tsx setup/index.ts --step verify` and parse the status block.
 
 Tell user to test: send a message in their registered chat. Show: `tail -f logs/motherclaw.log`
 
+## 9. Post-Setup Audit
+
+After verify passes, run a deeper sanity check. This catches configuration mismatches that individual steps miss.
+
+### 9a. Bot name consistency
+
+For Slack channels, verify ASSISTANT_NAME matches the actual Slack bot display name:
+
+```bash
+# Get actual bot name from Slack API
+SLACK_BOT_TOKEN=$(grep SLACK_BOT_TOKEN .env | cut -d= -f2)
+BOT_USER_ID=$(curl -s -H "Authorization: Bearer $SLACK_BOT_TOKEN" "https://slack.com/api/auth.test" | python3 -c "import sys,json; print(json.load(sys.stdin).get('user_id',''))")
+ACTUAL_NAME=$(curl -s -H "Authorization: Bearer $SLACK_BOT_TOKEN" "https://slack.com/api/users.info?user=$BOT_USER_ID" | python3 -c "import sys,json; u=json.load(sys.stdin).get('user',{}); p=u.get('profile',{}); print(p.get('display_name') or u.get('real_name') or u.get('name',''))")
+
+# Get configured name
+CONFIGURED_NAME=$(grep ASSISTANT_NAME .env | cut -d= -f2)
+
+echo "Slack bot name: $ACTUAL_NAME"
+echo "Configured name: $CONFIGURED_NAME"
+```
+
+If they don't match (or ASSISTANT_NAME is missing):
+1. Set `ASSISTANT_NAME=$ACTUAL_NAME` in `.env`
+2. Update all registered groups: `sqlite3 store/messages.db "UPDATE registered_groups SET trigger_pattern = '@$ACTUAL_NAME'"`
+3. Restart the service
+
+### 9b. Service points to correct directories
+
+```bash
+# macOS
+PLIST=$(ls ~/Library/LaunchAgents/com.motherclaw.*.plist 2>/dev/null | head -1)
+if [ -n "$PLIST" ]; then
+  WORKING_DIR=$(plutil -extract WorkingDirectory raw "$PLIST" 2>/dev/null)
+  CURRENT_DIR=$(pwd)
+  echo "Plist WorkingDirectory: $WORKING_DIR"
+  echo "Current project dir:    $CURRENT_DIR"
+fi
+```
+
+If `WorkingDirectory` doesn't match the current project directory, the service is running from the wrong place. Re-run step 7.
+
+### 9c. No state in plugin source
+
+In plugin mode only — verify no state leaked into the plugin code directory:
+
+```bash
+PLUGIN_DIR=${CLAUDE_PLUGIN_ROOT}
+if [ -n "$PLUGIN_DIR" ]; then
+  LEAKED=""
+  [ -f "$PLUGIN_DIR/store/messages.db" ] && LEAKED="$LEAKED store/messages.db"
+  [ -d "$PLUGIN_DIR/groups" ] && [ "$(ls -A $PLUGIN_DIR/groups 2>/dev/null)" ] && LEAKED="$LEAKED groups/"
+  [ -f "$PLUGIN_DIR/logs/motherclaw.log" ] && LEAKED="$LEAKED logs/motherclaw.log"
+  if [ -n "$LEAKED" ]; then
+    echo "WARNING: State found in plugin source dir: $LEAKED"
+    echo "This data should be in the project dir, not the plugin code."
+  else
+    echo "OK: No state in plugin source dir"
+  fi
+fi
+```
+
+If state leaked, move it to the project dir and clean the plugin source.
+
+### 9d. Channel activation matches config
+
+Check that only configured channels are active in the service logs:
+
+```bash
+echo "=== Channels that should be active ==="
+grep 'SLACK_BOT_TOKEN' .env >/dev/null 2>&1 && echo "Slack: configured"
+[ -f store/auth/creds.json ] && echo "WhatsApp: configured"
+grep 'TELEGRAM_BOT_TOKEN' .env >/dev/null 2>&1 && echo "Telegram: configured"
+
+echo "=== Channels in service logs ==="
+grep -E 'Connected to|skipping|credentials missing' logs/motherclaw.log | tail -10
+```
+
+If a channel shows "credentials missing — skipping" that's correct for unconfigured channels. If a channel crashes or loops, that's a bug.
+
+### 9e. Summary
+
+Print a final summary:
+
+```
+✓ Bot name: ClaudeDev (matches Slack API)
+✓ Trigger: @ClaudeDev
+✓ Service: com.motherclaw.my-assistant (running, PID 12345)
+✓ WorkingDirectory: /home/user/my-assistant
+✓ Channels: Slack (connected)
+✓ No state in plugin source
+```
+
+If any check fails, fix it before telling the user setup is complete.
+
 ## Troubleshooting
 
 **Service not starting:** Check `logs/motherclaw.error.log`. Common: wrong Node path (re-run step 7), missing `.env` (step 4), missing channel credentials (re-invoke channel skill).
