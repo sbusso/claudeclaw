@@ -104,6 +104,54 @@ export interface Channel {
   syncGroups?(force: boolean): Promise<void>;
 }
 
+// --- Message routing ---
+
+export interface IngestionEnvelope {
+  groupFolder: string;
+  chatJid: string;
+  sender: string;
+  senderName: string;
+  triggerType: 'channel' | 'webhook' | 'cron' | 'ipc' | 'extension';
+  prompt: string;
+  bypassTrigger?: boolean; // webhooks, cron, main group skip trigger check
+  meta?: Record<string, unknown>;
+}
+
+export interface OutboundEnvelope {
+  chatJid: string;
+  text: string;
+  triggerType: 'agent-response' | 'ipc' | 'task-result' | 'extension';
+  groupFolder?: string;
+  meta?: Record<string, unknown>;
+}
+
+export type HookResult<T> =
+  | { action: 'continue' }
+  | { action: 'drop'; reason?: string }
+  | { action: 'modify'; envelope: T };
+
+export type IngestionPreHook = (
+  envelope: IngestionEnvelope,
+) => Promise<HookResult<IngestionEnvelope>>;
+
+export type OutboundPreHook = (
+  envelope: OutboundEnvelope,
+) => Promise<HookResult<OutboundEnvelope>>;
+
+export interface MessageIngestion {
+  addPreHook(hook: IngestionPreHook): void;
+  addPostHook(hook: (envelope: IngestionEnvelope) => void): void;
+  ingest(envelope: IngestionEnvelope): Promise<boolean>;
+}
+
+export interface MessageRouter {
+  addPreHook(hook: OutboundPreHook): void;
+  addPostHook(hook: (envelope: OutboundEnvelope) => void): void;
+  route(envelope: OutboundEnvelope): Promise<void>;
+  /** Convenience: route with minimal envelope */
+  send(jid: string, text: string): Promise<void>;
+}
+
 // Callback type that channels use to deliver inbound messages
 export type OnInboundMessage = (chatJid: string, message: NewMessage) => void;
 

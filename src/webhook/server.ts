@@ -1,11 +1,11 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import crypto from 'crypto';
 import { logger } from '../orchestrator/logger.js';
+import type { MessageIngestion } from '../orchestrator/types.js';
 
 export interface WebhookDeps {
-  sendMessage: (jid: string, text: string) => Promise<void>;
+  ingestion: MessageIngestion;
   findGroupByFolder: (folder: string) => { jid: string; name: string } | undefined;
-  enqueueWebhook: (groupJid: string, prompt: string) => void;
 }
 
 // Rate limiting: per-group request counter
@@ -111,11 +111,23 @@ export function startWebhookServer(
 
     const prompt = payload.prompt || JSON.stringify(payload);
 
-    // Enqueue agent run
-    deps.enqueueWebhook(group.jid, prompt);
-    logger.info({ groupFolder, jid: group.jid }, 'Webhook triggered');
+    // Ingest via the routing service
+    const accepted = await deps.ingestion.ingest({
+      groupFolder,
+      chatJid: group.jid,
+      sender: 'webhook',
+      senderName: 'Webhook',
+      triggerType: 'webhook',
+      prompt,
+      bypassTrigger: true,
+    });
 
-    sendJson(res, 200, { status: 'accepted', group: group.name });
+    if (accepted) {
+      logger.info({ groupFolder, jid: group.jid }, 'Webhook triggered');
+      sendJson(res, 200, { status: 'accepted', group: group.name });
+    } else {
+      sendJson(res, 200, { status: 'dropped', group: group.name });
+    }
   });
 
   server.listen(port, () => {

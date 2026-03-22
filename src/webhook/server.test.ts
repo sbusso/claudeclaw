@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import crypto from 'crypto';
 import http from 'http';
 import { verifySignature, startWebhookServer } from './server.js';
+import type { IngestionEnvelope, MessageIngestion } from '../orchestrator/types.js';
 
 describe('verifySignature', () => {
   const secret = 'test-secret-key';
@@ -65,19 +66,27 @@ describe('webhook server HTTP', () => {
 
   let server: http.Server;
   let port: number;
-  const enqueuedWebhooks: Array<{ jid: string; prompt: string }> = [];
+  const ingestedEnvelopes: IngestionEnvelope[] = [];
+
+  function createMockIngestion(): MessageIngestion {
+    return {
+      addPreHook: vi.fn(),
+      addPostHook: vi.fn(),
+      ingest: vi.fn(async (envelope: IngestionEnvelope) => {
+        ingestedEnvelopes.push(envelope);
+        return true;
+      }),
+    };
+  }
 
   beforeEach(async () => {
-    enqueuedWebhooks.length = 0;
+    ingestedEnvelopes.length = 0;
 
     server = startWebhookServer(0, secret, {
-      sendMessage: vi.fn(),
+      ingestion: createMockIngestion(),
       findGroupByFolder: (folder) => {
         if (folder === 'test-group') return { jid: 'test-jid@g.us', name: 'Test Group' };
         return undefined;
-      },
-      enqueueWebhook: (jid, prompt) => {
-        enqueuedWebhooks.push({ jid, prompt });
       },
     });
 
@@ -121,7 +130,7 @@ describe('webhook server HTTP', () => {
     expect(res.body.error).toBe('Invalid signature');
   });
 
-  it('accepts valid webhook and enqueues', async () => {
+  it('accepts valid webhook and ingests', async () => {
     const body = JSON.stringify({ prompt: 'run report' });
     const res = await makeRequest(port, 'POST', '/webhook/test-group', body, {
       'x-signature': sign(body),
@@ -130,9 +139,11 @@ describe('webhook server HTTP', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('accepted');
     expect(res.body.group).toBe('Test Group');
-    expect(enqueuedWebhooks).toHaveLength(1);
-    expect(enqueuedWebhooks[0].jid).toBe('test-jid@g.us');
-    expect(enqueuedWebhooks[0].prompt).toBe('run report');
+    expect(ingestedEnvelopes).toHaveLength(1);
+    expect(ingestedEnvelopes[0].chatJid).toBe('test-jid@g.us');
+    expect(ingestedEnvelopes[0].prompt).toBe('run report');
+    expect(ingestedEnvelopes[0].triggerType).toBe('webhook');
+    expect(ingestedEnvelopes[0].bypassTrigger).toBe(true);
   });
 
   it('returns 404 for non-POST non-GET requests', async () => {

@@ -55,6 +55,8 @@ import { GroupQueue } from './group-queue.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { startIpcWatcher } from './ipc.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
+import { createMessageRouter } from './outbound-router.js';
+import { createMessageIngestion } from './ingestion.js';
 import {
   restoreRemoteControl,
   startRemoteControl,
@@ -67,7 +69,7 @@ import {
   shouldDropMessage,
 } from './sender-allowlist.js';
 import { startSchedulerLoop } from './task-scheduler.js';
-import { callExtensionStartup, getExtensionDbSchema } from './extensions.js';
+import { callExtensionStartup, getExtensionDbSchema, wireExtensionHooks } from './extensions.js';
 // Load plugins (self-registering on import)
 // Extensions loaded from src/index.ts;
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
@@ -747,22 +749,40 @@ export async function main(): Promise<void> {
       if (text) await channel.sendMessage(jid, text);
     },
   });
+  // Create routing services
+  const router = createMessageRouter(channels);
+  const ingestion = createMessageIngestion({
+    checkTrigger: (chatJid, sender) => {
+      const group = registeredGroups[chatJid];
+      if (!group) return { needsTrigger: true, hasTrigger: false };
+      const isMainGroup = group.isMain === true;
+      const needsTrigger = !isMainGroup && group.requiresTrigger !== false;
+      if (!needsTrigger) return { needsTrigger: false, hasTrigger: true };
+      const allowlistCfg = loadSenderAllowlist();
+      const hasTrigger =
+        TRIGGER_PATTERN.test('') || // placeholder — actual check in polling loop
+        isTriggerAllowed(chatJid, sender, allowlistCfg);
+      return { needsTrigger, hasTrigger };
+    },
+    enqueueMessageCheck: (chatJid) => queue.enqueueMessageCheck(chatJid),
+    sendToActive: (chatJid, formatted) => queue.sendMessage(chatJid, formatted),
+  });
+
+  // Wire extension hooks into services
+  wireExtensionHooks(ingestion, router);
+
   // Start all plugins (triage, etc.)
   callExtensionStartup({
-    sendMessage: async (jid, text) => {
-      const channel = findChannel(channels, jid);
-      if (channel) await channel.sendMessage(jid, text);
-    },
-    findChannel: (jid) => findChannel(channels, jid),
+    ingestion,
+    router,
     logger,
+    // Backward compat (deprecated):
+    sendMessage: async (jid, text) => router.send(jid, text),
+    findChannel: (jid) => findChannel(channels, jid),
   });
 
   startIpcWatcher({
-    sendMessage: (jid, text) => {
-      const channel = findChannel(channels, jid);
-      if (!channel) throw new Error(`No channel for JID: ${jid}`);
-      return channel.sendMessage(jid, text);
-    },
+    sendMessage: (jid, text) => router.send(jid, text),
     registeredGroups: () => registeredGroups,
     registerGroup,
     syncGroups: async (force: boolean) => {
@@ -779,29 +799,12 @@ export async function main(): Promise<void> {
   // Start webhook server if configured
   if (WEBHOOK_SECRET) {
     startWebhookServer(WEBHOOK_PORT, WEBHOOK_SECRET, {
-      sendMessage: async (jid, text) => {
-        const channel = findChannel(channels, jid);
-        if (channel) await channel.sendMessage(jid, text);
-      },
+      ingestion,
       findGroupByFolder: (folder) => {
         for (const [jid, group] of Object.entries(registeredGroups)) {
           if (group.folder === folder) return { jid, name: group.name };
         }
         return undefined;
-      },
-      enqueueWebhook: (groupJid, prompt) => {
-        // Store the prompt as a message and enqueue for processing
-        const msgId = `webhook-${Date.now()}`;
-        storeMessage({
-          id: msgId,
-          chat_jid: groupJid,
-          sender: 'webhook',
-          sender_name: 'Webhook',
-          content: prompt,
-          timestamp: new Date().toISOString(),
-          is_from_me: true,
-        });
-        queue.enqueueMessageCheck(groupJid);
       },
     });
   }

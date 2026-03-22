@@ -1,8 +1,17 @@
 /**
  * Extension system for MotherClaw.
  * Extensions register IPC handlers, startup hooks, DB schema,
- * and container env vars without modifying core files.
+ * container env vars, and routing hooks without modifying core files.
  */
+
+import type {
+  IngestionPreHook,
+  IngestionEnvelope,
+  OutboundPreHook,
+  OutboundEnvelope,
+  MessageIngestion,
+  MessageRouter,
+} from './types.js';
 
 export interface IpcHandler {
   (
@@ -14,15 +23,27 @@ export interface IpcHandler {
 }
 
 export interface ExtensionStartupDeps {
-  sendMessage: (jid: string, text: string) => Promise<void>;
-  findChannel: (jid: string) => any;
+  ingestion: MessageIngestion;
+  router: MessageRouter;
   logger: any;
+  /** @deprecated Use router.send() instead */
+  sendMessage: (jid: string, text: string) => Promise<void>;
+  /** @deprecated Use router directly */
+  findChannel: (jid: string) => any;
+}
+
+export interface ExtensionHooks {
+  preIngest?: IngestionPreHook;
+  postIngest?: (envelope: IngestionEnvelope) => void;
+  preRoute?: OutboundPreHook;
+  postRoute?: (envelope: OutboundEnvelope) => void;
 }
 
 export interface MotherClawExtension {
   name: string;
   ipcHandlers?: Record<string, IpcHandler>;
   onStartup?: (deps: ExtensionStartupDeps) => void;
+  hooks?: ExtensionHooks;
   dbSchema?: string[];
   dbMigrations?: string[];
   envKeys?: string[];
@@ -70,5 +91,22 @@ export function callExtensionStartup(deps: ExtensionStartupDeps): void {
     if (ext.onStartup) {
       ext.onStartup(deps);
     }
+  }
+}
+
+/**
+ * Wire extension hooks into the ingestion and router services.
+ * Called after services are created but before the message loop starts.
+ */
+export function wireExtensionHooks(
+  ingestion: MessageIngestion,
+  router: MessageRouter,
+): void {
+  for (const ext of extensions) {
+    if (!ext.hooks) continue;
+    if (ext.hooks.preIngest) ingestion.addPreHook(ext.hooks.preIngest);
+    if (ext.hooks.postIngest) ingestion.addPostHook(ext.hooks.postIngest);
+    if (ext.hooks.preRoute) router.addPreHook(ext.hooks.preRoute);
+    if (ext.hooks.postRoute) router.addPostHook(ext.hooks.postRoute);
   }
 }
