@@ -29,6 +29,7 @@ import { resolveGroupFolderPath, resolveGroupIpcPath } from '../orchestrator/gro
 import { logger } from '../orchestrator/logger.js';
 import { validateAdditionalMounts } from '../orchestrator/mount-security.js';
 import { RegisteredGroup } from '../orchestrator/types.js';
+import { getExtensionAllowedDomains } from '../orchestrator/extension-loader.js';
 import type { ContainerInput, ContainerOutput } from './container-runner.js';
 
 // Sentinel markers for robust output parsing (must match agent-runner)
@@ -375,7 +376,10 @@ export async function runSandboxAgent(
   const settingsDir = path.join(DATA_DIR, 'sandbox-settings');
   fs.mkdirSync(settingsDir, { recursive: true });
   const settingsPath = path.join(settingsDir, `${processName}.json`);
-  const extraDomains = group.agentConfig?.allowedDomains ?? [];
+  // Merge domains: extension manifests + per-group agentConfig
+  const extensionDomains = getExtensionAllowedDomains();
+  const groupDomains = group.agentConfig?.allowedDomains ?? [];
+  const extraDomains = [...extensionDomains, ...groupDomains];
   const settings = buildSandboxSettings(mounts, extraDomains);
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 

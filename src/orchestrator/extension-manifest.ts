@@ -14,6 +14,7 @@ export interface ExtensionManifest {
     dbSchema?: boolean;
     envKeys?: string[];
     containerEnvKeys?: string[];
+    allowedDomains?: string[];   // Network domains this extension needs (merged into sandbox settings)
   };
   skills?: string[];
   agents?: string[];
