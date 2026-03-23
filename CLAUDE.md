@@ -159,12 +159,40 @@ agentConfig: {
   model: 'haiku',           // 'sonnet' | 'opus' | 'haiku' | full model ID
   systemPrompt: '...',      // Appended to agent system context
   allowedTools: ['Bash', 'Read'],  // Override default tool allowlist
+  disallowedTools: ['Write'],      // Block specific tools
   maxTurns: 10,             // Limit conversation turns
   costLimitUsd: 0.50,       // Per-run budget cap
+  effort: 'high',           // Model reasoning effort
+  allowedDomains: [          // Extra network domains for sandbox
+    'api.github.com',        // GitHub API (for gh CLI)
+    '*.github.com',          // GitHub web
+    'my-db.railway.app',     // Database host
+  ],
 }
 ```
 
 Stored as JSON in `registered_groups.agent_config` column. Passed through `ContainerInput` to the agent runner, which applies overrides to the SDK `query()` call.
+
+### Network Access (Sandbox Mode)
+
+The sandbox restricts outbound network by default. Agents can only connect to domains listed in `allowedDomains`. The final domain list is built from three sources:
+
+1. **Base (always):** `api.anthropic.com`, `*.anthropic.com`, `localhost`, `127.0.0.1`
+2. **Extension manifests:** each extension declares domains it needs in `manifest.json` → `provides.allowedDomains`
+3. **Per-group `agentConfig.allowedDomains`:** custom domains for this group's specific needs
+
+Common domains to add:
+- `api.github.com`, `*.github.com` — for `gh` CLI and GitHub API
+- `*.railway.app` — for Railway-hosted databases
+- `*.amazonaws.com` — for AWS services
+- `api.openai.com` — for OpenAI API access (multi-model routing)
+
+To update a group's allowed domains:
+```sql
+UPDATE registered_groups
+SET agent_config = json_set(COALESCE(agent_config, '{}'), '$.allowedDomains', json('["api.github.com","*.github.com"]'))
+WHERE folder = 'mygroup';
+```
 
 ## Webhook Triggers
 

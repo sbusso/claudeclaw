@@ -40,6 +40,7 @@ export interface AgentConfig {
   disallowedTools?: string[];  // Tool blacklist (v2.1.78+ — applied on top of allowlist)
   maxTurns?: number;           // Max conversation turns
   costLimitUsd?: number;       // Per-run budget cap
+  allowedDomains?: string[];   // Extra network domains the sandbox agent can access (merged with base Anthropic + localhost)
 }
 
 export interface RegisteredGroup {

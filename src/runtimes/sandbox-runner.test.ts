@@ -117,6 +117,19 @@ describe('buildSandboxSettings', () => {
     expect(settings.network.deniedDomains).toEqual([]);
   });
 
+  it('merges extra allowed domains with base domains', () => {
+    const settings = buildSandboxSettings([], ['api.github.com', '*.github.com']);
+    expect(settings.network.allowedDomains).toContain('api.anthropic.com');
+    expect(settings.network.allowedDomains).toContain('api.github.com');
+    expect(settings.network.allowedDomains).toContain('*.github.com');
+  });
+
+  it('deduplicates domains', () => {
+    const settings = buildSandboxSettings([], ['api.anthropic.com', 'api.github.com']);
+    const count = settings.network.allowedDomains.filter(d => d === 'api.anthropic.com').length;
+    expect(count).toBe(1);
+  });
+
   it('includes allowRead in filesystem (required by srt schema, even if empty)', () => {
     const settings = buildSandboxSettings([]);
     expect(settings.filesystem).toHaveProperty('allowRead');

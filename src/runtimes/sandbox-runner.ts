@@ -275,7 +275,19 @@ function buildSandboxMounts(
 // Settings & args builders
 // ---------------------------------------------------------------------------
 
-export function buildSandboxSettings(mounts: SandboxMount[]): SandboxSettings {
+/**
+ * Build sandbox settings from mounts and optional extra allowed domains.
+ *
+ * Network domains are layered:
+ *   1. Base (always): api.anthropic.com, *.anthropic.com, localhost, 127.0.0.1
+ *   2. Extra: from agentConfig.allowedDomains (per-group) and extension manifests
+ *
+ * Duplicates are removed automatically.
+ */
+export function buildSandboxSettings(
+  mounts: SandboxMount[],
+  extraAllowedDomains: string[] = [],
+): SandboxSettings {
   const denyRead: string[] = [];
   const allowRead: string[] = [];
   const allowWrite: string[] = [];
@@ -294,15 +306,18 @@ export function buildSandboxSettings(mounts: SandboxMount[]): SandboxSettings {
     }
   }
 
+  // Merge base + extra domains, deduplicate
+  const baseDomains = [
+    'api.anthropic.com',
+    '*.anthropic.com',
+    'localhost',
+    '127.0.0.1',
+  ];
+  const allDomains = [...new Set([...baseDomains, ...extraAllowedDomains])];
+
   return {
     network: {
-      // Allow Anthropic API (direct auth, no proxy) and localhost for IPC
-      allowedDomains: [
-        'api.anthropic.com',
-        '*.anthropic.com',
-        'localhost',
-        '127.0.0.1',
-      ],
+      allowedDomains: allDomains,
       deniedDomains: [],
       allowLocalBinding: true,
     },
@@ -360,7 +375,8 @@ export async function runSandboxAgent(
   const settingsDir = path.join(DATA_DIR, 'sandbox-settings');
   fs.mkdirSync(settingsDir, { recursive: true });
   const settingsPath = path.join(settingsDir, `${processName}.json`);
-  const settings = buildSandboxSettings(mounts);
+  const extraDomains = group.agentConfig?.allowedDomains ?? [];
+  const settings = buildSandboxSettings(mounts, extraDomains);
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 
   const sandboxArgs = buildSandboxArgs(settingsPath);
