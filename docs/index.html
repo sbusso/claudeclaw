@@ -94,7 +94,7 @@
       font-size: 1.15rem;
       color: var(--text-secondary);
       max-width: 600px;
-      margin: 0.5rem auto 0;
+      margin: 0.5rem 0 0;
     }
 
     .stat-pill {
@@ -416,7 +416,7 @@
   <section id="comparison" class="section" style="background: linear-gradient(to bottom, #0A0E14, #0F0F14);">
     <div class="container fade-in">
       <h2>Why not OpenClaw?</h2>
-      <p class="subtitle" style="margin-left: 0;">OpenClaw is a platform. ClaudeClaw is a tool. Same problem, different philosophy.</p>
+      <p class="subtitle">OpenClaw is a platform. ClaudeClaw is a tool. Same problem, different philosophy.</p>
       <table class="comparison-table">
         <thead>
           <tr>
@@ -465,7 +465,7 @@
   <section id="how-it-works" class="section" style="background: linear-gradient(to bottom, #0F0F14, #0B0D12);">
     <div class="container fade-in">
       <h2>How it works</h2>
-      <p class="subtitle" style="margin-left: 0;">Single process. Channels in, sandboxed agents out.</p>
+      <p class="subtitle">Single process. Channels in, sandboxed agents out.</p>
       <img src="assets/architecture.png" loading="lazy" alt="ClaudeClaw message flow" class="section-img">
     </div>
   </section>
@@ -474,15 +474,15 @@
   <section id="sandbox" class="section" style="background: linear-gradient(to bottom, #0B0D12, #0D1018);">
     <div class="container fade-in">
       <h2>Sandbox-first security</h2>
-      <p class="subtitle" style="margin-left: 0;">The kernel enforces isolation, not your application code.</p>
+      <p class="subtitle">The kernel enforces isolation, not your application code.</p>
       <div class="pillars">
         <div class="pillar">
           <h3>Kernel isolation</h3>
-          <p>Seatbelt (macOS) / bubblewrap (Linux). Not app-level permission checks -- OS-level enforcement.</p>
+          <p>Seatbelt (macOS) / bubblewrap (Linux). Not app-level permission checks — OS-level enforcement.</p>
         </div>
         <div class="pillar">
           <h3>Network restriction</h3>
-          <p>Agents can only reach api.anthropic.com. Credentials passed directly -- nowhere to exfiltrate.</p>
+          <p>Agents can only reach api.anthropic.com. Credentials passed directly — nowhere to exfiltrate.</p>
         </div>
         <div class="pillar">
           <h3>Zero overhead</h3>
@@ -526,7 +526,7 @@
       <div class="feature" style="margin-top: 2rem;">
         <div class="feature-text">
           <h3>Multi-channel routing</h3>
-          <p>Slack, WhatsApp, Telegram, Discord, Gmail. Channels self-register -- the orchestrator connects whichever ones have credentials.</p>
+          <p>Slack, WhatsApp, Telegram, Discord, Gmail. Channels self-register — the orchestrator connects whichever ones have credentials.</p>
         </div>
         <div class="feature-img">
           <img src="assets/channels.png" loading="lazy" alt="Multi-channel routing">
@@ -550,7 +550,7 @@
       <div class="feature feature--full">
         <div class="feature-text">
           <h3>Cost tracking &amp; limits</h3>
-          <p>Per-run logging with token usage and estimated cost. Per-group budget caps. Model selection per group -- use Haiku for triage, Opus for deep work.</p>
+          <p>Per-run logging with token usage and estimated cost. Per-group budget caps. Model selection per group — use Haiku for triage, Opus for deep work.</p>
         </div>
       </div>
     </div>
@@ -560,7 +560,7 @@
   <section id="extensions" class="section" style="background: linear-gradient(to bottom, #0D1117, #0A0E14);">
     <div class="container fade-in">
       <h2>Composable extensions</h2>
-      <p class="subtitle" style="margin-left: 0;">Install only what you use. No merge conflicts. Core updates are <code>git pull</code>.</p>
+      <p class="subtitle">Install only what you use. No merge conflicts. Core updates are <code>git pull</code>.</p>
       <div class="terminal" style="margin-top: 2rem; max-width: 680px;">
         <span class="prompt">$ </span><span class="cmd">claude</span><br>
         <span class="prompt">&gt; </span><span class="cmd">/install-extension slack</span><br>
