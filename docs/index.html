@@ -130,6 +130,7 @@
       color: var(--text-secondary);
       overflow-x: auto;
       text-align: left;
+      white-space: nowrap;
     }
 
     .terminal .prompt {
@@ -146,11 +147,17 @@
     }
 
     /* Comparison table */
+    .comparison-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .comparison-table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 2rem;
       font-size: 0.95rem;
+      min-width: 500px;
     }
 
     .comparison-table th {
@@ -417,6 +424,7 @@
     <div class="container fade-in">
       <h2>Why not OpenClaw?</h2>
       <p class="subtitle">OpenClaw is a platform. ClaudeClaw is a tool. Same problem, different philosophy.</p>
+      <div class="comparison-table-wrap">
       <table class="comparison-table">
         <thead>
           <tr>
@@ -458,6 +466,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </section>
 
