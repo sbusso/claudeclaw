@@ -9,3 +9,6 @@ logs/
 
 # Installable extensions (per-instance, not checked in)
 extensions/
+
+# Brainstorm sessions
+.superpowers/
