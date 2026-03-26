@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClaudeClaw — Lightweight Agent Orchestrator for Claude Code</title>
+  <meta name="description" content="Persistent agent orchestrator plugin for Claude Code. Multi-channel routing, OS-level sandbox isolation, structured memory. 8K lines. Open source.">
+  <meta property="og:title" content="ClaudeClaw — Lightweight Agent Orchestrator for Claude Code">
+  <meta property="og:description" content="Persistent agent orchestrator plugin for Claude Code. Multi-channel routing, OS-level sandbox isolation, structured memory. 8K lines. Open source.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/hero.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ClaudeClaw — Lightweight Agent Orchestrator for Claude Code">
+  <meta name="twitter:description" content="Persistent agent orchestrator plugin for Claude Code. Multi-channel routing, OS-level sandbox isolation, structured memory. 8K lines. Open source.">
+  <meta name="twitter:image" content="assets/hero.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-darkest:    #0A0A0B;
+      --bg-dark:       #0D1117;
+      --bg-mid:        #0F0F14;
+      --bg-section:    #111318;
+      --border:        #1a1a2e;
+      --text-primary:  #f0f0f0;
+      --text-secondary:#888888;
+      --text-muted:    #555555;
+      --accent:        #E8A020;
+      --accent-dark:   #D4870E;
+      --accent-glow:   rgba(212, 135, 14, 0.08);
+      --accent-border: rgba(212, 135, 14, 0.25);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-darkest);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1 {
+      font-size: 3.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    p {
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--accent-dark);
+    }
+
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0.5rem auto 0;
+    }
+
+    .stat-pill {
+      display: inline-block;
+      padding: 0.35rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .section {
+      width: 100%;
+      padding: 5rem 1.5rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Terminal */
+    .terminal {
+      background: #0A0A0F;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      overflow-x: auto;
+      text-align: left;
+    }
+
+    .terminal .prompt {
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .terminal .cmd {
+      color: var(--text-primary);
+    }
+
+    .terminal .output {
+      color: var(--text-secondary);
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      font-size: 0.95rem;
+    }
+
+    .comparison-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+    }
+
+    .comparison-table td:first-child {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .comparison-table .accent {
+      color: var(--accent);
+    }
+
+    /* Pillars */
+    .pillar {
+      border-left: 2px solid var(--accent);
+      padding: 1rem 0 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .pillar h3 {
+      color: var(--text-primary);
+    }
+
+    .pillar p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* Philosophy grid */
+    .philosophy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .philosophy-grid h3 {
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .philosophy-grid p {
+      font-size: 0.95rem;
+    }
+
+    /* Features */
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .feature:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    .feature-text {
+      flex: 1;
+    }
+
+    .feature-text h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-img {
+      flex: 1;
+      max-width: 420px;
+    }
+
+    .feature-img img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .feature--full .feature-text {
+      flex: 1;
+      max-width: 100%;
+    }
+
+    /* Extension grid */
+    .ext-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .ext-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .ext-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .ext-card p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .ext-card.planned {
+      border-style: dashed;
+      opacity: 0.5;
+    }
+
+    .ext-card .ext-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #0A0A0B;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      color: #0A0A0B;
+    }
+
+    /* Footer */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--text-secondary);
+    }
+
+    footer a:hover {
+      color: var(--accent);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    /* Fade-in animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive images */
+    .section img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .hero-img {
+      border-radius: 12px;
+      margin-top: 2.5rem;
+    }
+
+    .section-img {
+      border-radius: 8px;
+      margin-top: 2rem;
+    }
+
+    /* Spacing helpers */
+    .stats {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 1.5rem 0;
+    }
+
+    .pillars {
+      margin-top: 2rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 { font-size: 2.2rem; }
+      h2 { font-size: 1.6rem; }
+      .section { padding: 3rem 1.25rem; }
+      .philosophy-grid { grid-template-columns: 1fr; }
+      .feature, .feature:nth-child(even) {
+        flex-direction: column;
+      }
+      .feature-img {
+        max-width: 100%;
+      }
+      footer {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+      .ext-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section id="hero" class="section" style="background: linear-gradient(to bottom, #0D1117, #0A0E14);">
+    <div class="container fade-in" style="text-align: center;">
+      <img src="assets/logo.webp" alt="ClaudeClaw logo" width="64" height="64" style="border-radius: 16px; margin-bottom: 1.5rem;">
+      <h1>ClaudeClaw</h1>
+      <p class="subtitle">Persistent agent orchestrator for Claude Code.<br>Multi-channel. Sandboxed. 8K lines you can actually read.</p>
+      <div class="stats">
+        <span class="stat-pill">&lt;10ms cold start</span>
+        <span class="stat-pill">~8K lines</span>
+        <span class="stat-pill">No Docker</span>
+      </div>
+      <div class="terminal" style="max-width: 620px; margin: 0 auto;">
+        <span class="prompt">$ </span><span class="cmd">git clone https://github.com/sbusso/claudeclaw.git && cd claudeclaw</span><br>
+        <span class="prompt">$ </span><span class="cmd">claude</span><br>
+        <span class="prompt">&gt; </span><span class="cmd">/setup</span>
+      </div>
+      <img src="assets/hero.png" loading="lazy" alt="ClaudeClaw architecture overview" class="hero-img">
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section id="comparison" class="section" style="background: linear-gradient(to bottom, #0A0E14, #0F0F14);">
+    <div class="container fade-in">
+      <h2>Why not OpenClaw?</h2>
+      <p class="subtitle" style="margin-left: 0;">OpenClaw is a platform. ClaudeClaw is a tool. Same problem, different philosophy.</p>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>ClaudeClaw</th>
+            <th>OpenClaw</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Codebase</td>
+            <td class="accent">~8K lines</td>
+            <td>500K+ lines</td>
+          </tr>
+          <tr>
+            <td>Security model</td>
+            <td class="accent">Kernel-enforced sandbox</td>
+            <td>Application-level checks</td>
+          </tr>
+          <tr>
+            <td>Cold start</td>
+            <td class="accent">&lt;10ms</td>
+            <td>Seconds</td>
+          </tr>
+          <tr>
+            <td>Requires Docker</td>
+            <td class="accent">No</td>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <td>Auditability</td>
+            <td class="accent">Fits in context window</td>
+            <td>Requires team</td>
+          </tr>
+          <tr>
+            <td>Configuration</td>
+            <td class="accent">Code changes (git revert)</td>
+            <td>Config file sprawl</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="section" style="background: linear-gradient(to bottom, #0F0F14, #0B0D12);">
+    <div class="container fade-in">
+      <h2>How it works</h2>
+      <p class="subtitle" style="margin-left: 0;">Single process. Channels in, sandboxed agents out.</p>
+      <img src="assets/architecture.png" loading="lazy" alt="ClaudeClaw message flow" class="section-img">
+    </div>
+  </section>
+
+  <!-- Sandbox & Security -->
+  <section id="sandbox" class="section" style="background: linear-gradient(to bottom, #0B0D12, #0D1018);">
+    <div class="container fade-in">
+      <h2>Sandbox-first security</h2>
+      <p class="subtitle" style="margin-left: 0;">The kernel enforces isolation, not your application code.</p>
+      <div class="pillars">
+        <div class="pillar">
+          <h3>Kernel isolation</h3>
+          <p>Seatbelt (macOS) / bubblewrap (Linux). Not app-level permission checks -- OS-level enforcement.</p>
+        </div>
+        <div class="pillar">
+          <h3>Network restriction</h3>
+          <p>Agents can only reach api.anthropic.com. Credentials passed directly -- nowhere to exfiltrate.</p>
+        </div>
+        <div class="pillar">
+          <h3>Zero overhead</h3>
+          <p>&lt;10ms cold starts. No VMs, no containers, no daemon. Just an ordinary process with restrictions.</p>
+        </div>
+        <div class="pillar">
+          <h3>Per-group boundaries</h3>
+          <p>Each group's agent sees only its own files. Family chat can't read your work directory. Kernel-enforced.</p>
+        </div>
+      </div>
+      <img src="assets/sandbox.png" loading="lazy" alt="Sandbox security model" class="section-img">
+    </div>
+  </section>
+
+  <!-- Philosophy -->
+  <section id="philosophy" class="section" style="background: linear-gradient(to bottom, #0D1018, #0A0C10);">
+    <div class="container fade-in">
+      <h2>A tool, not a platform</h2>
+      <div class="philosophy-grid">
+        <div>
+          <h3>Small enough to understand</h3>
+          <p>~8K lines. One process. The entire codebase fits in Claude's context window for self-improvement.</p>
+        </div>
+        <div>
+          <h3>Built for one person</h3>
+          <p>Not an enterprise framework. Software that fits each user's exact needs. Fork it, modify it, own it.</p>
+        </div>
+        <div>
+          <h3>Code is configuration</h3>
+          <p>No YAML sprawl. Want different behavior? Tell Claude to change the code. Every change is a commit you can revert.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="section" style="background: linear-gradient(to bottom, #0A0C10, #0D1117);">
+    <div class="container fade-in">
+      <h2>Features</h2>
+
+      <div class="feature" style="margin-top: 2rem;">
+        <div class="feature-text">
+          <h3>Multi-channel routing</h3>
+          <p>Slack, WhatsApp, Telegram, Discord, Gmail. Channels self-register -- the orchestrator connects whichever ones have credentials.</p>
+        </div>
+        <div class="feature-img">
+          <img src="assets/channels.png" loading="lazy" alt="Multi-channel routing">
+        </div>
+      </div>
+
+      <div class="feature feature--full">
+        <div class="feature-text">
+          <h3>Structured memory</h3>
+          <p>Daily logs, topic files, long-term CLAUDE.md, searchable archive. Auto-saved before context compaction. Upgradeable to QMD semantic search.</p>
+        </div>
+      </div>
+
+      <div class="feature feature--full">
+        <div class="feature-text">
+          <h3>Three trigger modes</h3>
+          <p>Channel messages (@mention), scheduled tasks (cron), webhook triggers (HMAC-SHA256). CI failures and monitoring alerts can invoke agents directly.</p>
+        </div>
+      </div>
+
+      <div class="feature feature--full">
+        <div class="feature-text">
+          <h3>Cost tracking &amp; limits</h3>
+          <p>Per-run logging with token usage and estimated cost. Per-group budget caps. Model selection per group -- use Haiku for triage, Opus for deep work.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Extensions -->
+  <section id="extensions" class="section" style="background: linear-gradient(to bottom, #0D1117, #0A0E14);">
+    <div class="container fade-in">
+      <h2>Composable extensions</h2>
+      <p class="subtitle" style="margin-left: 0;">Install only what you use. No merge conflicts. Core updates are <code>git pull</code>.</p>
+      <div class="terminal" style="margin-top: 2rem; max-width: 680px;">
+        <span class="prompt">$ </span><span class="cmd">claude</span><br>
+        <span class="prompt">&gt; </span><span class="cmd">/install-extension slack</span><br>
+        <span class="output">Cloning claudeclaw-slack... compiling... installing deps... copying skills...</span> <span style="color: #4ade80;">&#10003;</span><br>
+        <span class="prompt">&gt; </span><span class="cmd">/install-extension triage</span><br>
+        <span class="output">Cloning claudeclaw-triage... compiling... installing deps... copying skills...</span> <span style="color: #4ade80;">&#10003;</span>
+      </div>
+      <div class="ext-grid">
+        <div class="ext-card">
+          <span class="ext-tag">Channel</span>
+          <h3>claudeclaw-slack</h3>
+          <p>Socket Mode, threads, reactions</p>
+        </div>
+        <div class="ext-card">
+          <span class="ext-tag">Agent</span>
+          <h3>claudeclaw-triage</h3>
+          <p>Bug triage + SWE task queue</p>
+        </div>
+        <div class="ext-card planned">
+          <span class="ext-tag">Planned</span>
+          <h3>claudeclaw-discord</h3>
+          <p>Discord channel</p>
+        </div>
+        <div class="ext-card planned">
+          <span class="ext-tag">Planned</span>
+          <h3>claudeclaw-gmail</h3>
+          <p>Gmail channel</p>
+        </div>
+        <div class="ext-card planned">
+          <span class="ext-tag">Planned</span>
+          <h3>claudeclaw-memory</h3>
+          <p>QMD semantic memory</p>
+        </div>
+        <div class="ext-card planned">
+          <span class="ext-tag">Planned</span>
+          <h3>claudeclaw-obsidian</h3>
+          <p>Obsidian vault sync</p>
+        </div>
+        <div class="ext-card planned">
+          <span class="ext-tag">Planned</span>
+          <h3>claudeclaw-tui</h3>
+          <p>Terminal dashboard</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta" class="section" style="background: linear-gradient(to bottom, #0A0E14, #0D1117);">
+    <div class="container fade-in" style="text-align: center;">
+      <h2>Get started in 30 seconds</h2>
+      <p style="margin-bottom: 1.5rem;">macOS or Linux. Node.js 20+. Claude Code.</p>
+      <div class="terminal" style="max-width: 560px; margin: 0 auto 2rem;">
+        <span class="prompt">$ </span><span class="cmd">git clone https://github.com/sbusso/claudeclaw.git</span><br>
+        <span class="prompt">$ </span><span class="cmd">cd claudeclaw</span><br>
+        <span class="prompt">$ </span><span class="cmd">claude</span><br>
+        <span class="prompt">&gt; </span><span class="cmd">/setup</span>
+      </div>
+      <a class="btn-primary" href="https://github.com/sbusso/claudeclaw">View on GitHub &rarr;</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <section class="section" style="background: #0A0A0B; padding: 0 1.5rem;">
+    <footer>
+      <span>MIT License &middot; Built on NanoClaw</span>
+      <div class="footer-links">
+        <a href="https://github.com/sbusso/claudeclaw">GitHub</a>
+        <a href="https://github.com/sbusso/claudeclaw/discussions">Discussions</a>
+        <a href="https://docs.anthropic.com/en/docs/agents">Claude Agent SDK</a>
+      </div>
+    </footer>
+  </section>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+  </script>
+
+</body>
+</html>
