@@ -300,7 +300,10 @@ export function buildSandboxSettings(
       denyWrite.push(mount.hostPath);
     } else if (mount.readonly) {
       allowRead.push(mount.hostPath);
-      denyWrite.push(mount.hostPath); // enforce read-only at srt level
+      // Do NOT push to denyWrite: per srt config, denyWrite takes precedence
+      // over allowWrite, so adding a parent path here blocks nested writable
+      // mounts (e.g. groupDir inside projectRoot). Read-only is enforced
+      // implicitly: paths not present in allowWrite cannot be written.
     } else {
       // read-write
       allowWrite.push(mount.hostPath);
